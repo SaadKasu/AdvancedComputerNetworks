@@ -2,6 +2,11 @@
 
 from mininet.topo import Topo
 
+class BridgeTopo(Topo):
+     def __init__(self):
+
+        Topo.__init__(self)
+
 net = Mininet(link=TCLink, switch=OVSBridge)
 
 h1 = net.addHost(h1)
