@@ -1,7 +1,8 @@
 # Python Script For Lab 0
 #!/usr/bin/python
 from mininet.topo import Topo
-from mininet.node import OVSBridge, TCLink
+from mininet.node import OVSBridge
+from mininet.node import TCLink
 
 class BridgeTopo(Topo):
     def __init__(self):
