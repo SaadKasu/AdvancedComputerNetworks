@@ -1,13 +1,13 @@
 # Python Script For Lab 0
-
+#!/usr/bin/python
 from mininet.topo import Topo
 
 class BridgeTopo(Topo):
      def __init__(self):
 
-        Topo.__init__(self)
+       Topo.__init__(self)
 
-net = Mininet(link=TCLink, switch=OVSBridge)
+#net = Mininet(link=TCLink, switch=OVSBridge)
 
 h1 = net.addHost(h1)
 h2 = net.addHost(h2)
