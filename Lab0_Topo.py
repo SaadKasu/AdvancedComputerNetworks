@@ -2,7 +2,7 @@
 #!/usr/bin/python
 from mininet.topo import Topo
 from mininet.node import OVSBridge
-from mininet.node import TCLink
+from mininet.link import TCLink
 
 class BridgeTopo(Topo):
     def __init__(self):
