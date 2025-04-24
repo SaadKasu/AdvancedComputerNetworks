@@ -18,7 +18,7 @@ class BridgeTopo(Topo):
 
         s1 = self.addSwitch('s1', cls = OVSBridge)
         s2 = self.addSwitch('s2', cls = OVSBridge)
-        s3 = self.addRouter('s3', cls = OVSBridge)
+        s3 = self.addSwitch('s3', cls = OVSBridge)
 
         l1 = self.addLink(h1,s1, bw=15, delay='10ms', cls = TCLink)
         l2 = self.addLink(h2,s1, bw=15, delay='10ms', cls = TCLink)
