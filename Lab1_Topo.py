@@ -11,14 +11,14 @@ class BridgeTopo(Topo):
 
 #net = Mininet(link=TCLink, switch=OVSBridge)
 
-        h1 = self.addHost('h1')
-        h2 = self.addHost('h2')
-        ser = self.addHost('ser')
-        ext = self.addHost('ext')
+        h1 = self.addHost('h1', ip = '10.0.1.2/24')
+        h2 = self.addHost('h2', ip = '10.0.1.3/24')
+        ser = self.addHost('ser', ip = '10.0.2.2/24')
+        ext = self.addHost('ext', ip = '192.168.1.123/24')
 
         s1 = self.addSwitch('s1', cls = OVSBridge)
         s2 = self.addSwitch('s2', cls = OVSBridge)
-        s3 = self.addSwitch('s3', cls = OVSBridge)
+        s3 = self.addRouter('s3', cls = OVSBridge)
 
         l1 = self.addLink(h1,s1, bw=15, delay='10ms', cls = TCLink)
         l2 = self.addLink(h2,s1, bw=15, delay='10ms', cls = TCLink)
