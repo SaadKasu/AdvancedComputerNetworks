@@ -41,9 +41,9 @@ class NetworkTopo(Topo):
         ser = self.addHost('ser', ip = '10.0.2.2/24')
         ext = self.addHost('ext', ip = '192.168.1.123/24')
 
-        s1 = self.addSwitch('s1', cls = OVSBridge)
-        s2 = self.addSwitch('s2', cls = OVSBridge)
-        s3 = self.addSwitch('s3', cls = OVSBridge)
+        s1 = self.addSwitch('s1', cls = OVSKernelSwitch)
+        s2 = self.addSwitch('s2', cls = OVSKernelSwitch)
+        s3 = self.addSwitch('s3', cls = OVSKernelSwitch)
 
         l1 = self.addLink(h1,s1, bw=15, delay='10ms', cls = TCLink)
         l2 = self.addLink(h2,s1, bw=15, delay='10ms', cls = TCLink)
