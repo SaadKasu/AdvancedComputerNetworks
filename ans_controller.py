@@ -99,23 +99,6 @@ class LearningSwitch(app_manager.RyuApp):
 
         self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
 
-        # Handle IPv4 packet forwarding (routing)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-        if ip_pkt:
-            dst_ip = ip_pkt.dst
-            if dst_ip in self.gateways:
-                # If the destination is a local gateway, use the MAC address from the gateway table
-                dst_mac = self.gateways[dst_ip]
-                out_port = self.mac_to_port[dpid].get(dst_mac, ofproto.OFPP_FLOOD)
-            else:
-                # Use routing table for routing between different subnets
-                next_hop_ip = self.routing_table.get(dst_ip)
-                if next_hop_ip and next_hop_ip in self.arp_table:
-                    dst_mac = self.arp_table[next_hop_ip]
-                    out_port = self.mac_to_port[dpid].get(dst_mac, ofproto.OFPP_FLOOD)
-                else:
-                    out_port = ofproto.OFPP_FLOOD
-
             actions = [parser.OFPActionOutput(out_port)]
             match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
             if msg.buffer_id != ofproto.OFP_NO_BUFFER:
