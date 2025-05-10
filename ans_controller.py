@@ -77,11 +77,6 @@ class LearningSwitch(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)#This decorator tells Ryu when the decorated function should be called. The first argument of the decorator indicates which type of event this function should be called for. The second argument indicates the state of the switch. You probably want to ignore packet_in messages before the negotiation between Ryu and the switch is finished.
     def _packet_in_handler(self, ev):
         
-        # If you hit this you might want to increase
-        # the "miss_send_length" of your switch
-        if ev.msg.msg_len < ev.msg.total_len:
-            self.logger.debug("packet truncated: only %s of %s bytes",
-                              ev.msg.msg_len, ev.msg.total_len)
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
@@ -108,7 +103,7 @@ class LearningSwitch(app_manager.RyuApp):
         else:
             out_port = ofproto.OFPP_FLOOD
 
-        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, eth.ethertype)
+        self.logger.info("packet in %s %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, eth.ethertype, ether_types.ETH_TYPE_IP)
 
         actions = [parser.OFPActionOutput(out_port)]
 
