@@ -99,21 +99,21 @@ class LearningSwitch(app_manager.RyuApp):
 
         self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
 
-            actions = [parser.OFPActionOutput(out_port)]
-            match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                self.add_flow(datapath, 1, match, actions, msg.buffer_id)
-                return
-            else:
-                self.add_flow(datapath, 1, match, actions)
+        actions = [parser.OFPActionOutput(out_port)]
+        match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
+        if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+            self.add_flow(datapath, 1, match, actions, msg.buffer_id)
+            return
+        else:
+            self.add_flow(datapath, 1, match, actions)
 
-            # Forward the packet to the appropriate port
-            data = None
-            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-                data = msg.data
-            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                      in_port=in_port, actions=actions, data=data)
-            datapath.send_msg(out)
+        # Forward the packet to the appropriate port
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
+        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                  in_port=in_port, actions=actions, data=data)
+        datapath.send_msg(out)
 
     def _send_arp_reply(self, datapath, pkt, arp_req, port):
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
