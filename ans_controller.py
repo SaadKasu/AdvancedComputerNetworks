@@ -38,6 +38,8 @@ class LearningSwitch(app_manager.RyuApp):
 
         # Here you can initialize the data structures you want to keep at the controller
         self.mac_to_port = {}
+        self.arp_table = {}  # IP -> MAC address table
+        self.routing_table = {}  # IP routes for forwarding
         self.gateways = {
             '10.0.1.1': '00:00:00:00:01:01',  # Gateway for subnet 10.0.1.0/24
             '10.0.2.1': '00:00:00:00:01:02',  # Gateway for subnet 10.0.2.0/24
