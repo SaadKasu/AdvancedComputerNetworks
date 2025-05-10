@@ -85,6 +85,8 @@ class LearningSwitch(app_manager.RyuApp):
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocols(ethernet.ethernet)[0]
+    
+        self.logger("Ether Type - %s",eth)
 
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
             # ignore lldp packet
@@ -103,7 +105,7 @@ class LearningSwitch(app_manager.RyuApp):
         else:
             out_port = ofproto.OFPP_FLOOD
 
-        self.logger.info("packet in %s %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, eth.ethertype, ether_types.ETH_TYPE_IP)
+        self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
 
         actions = [parser.OFPActionOutput(out_port)]
 
