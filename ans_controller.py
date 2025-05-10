@@ -37,19 +37,21 @@ class LearningSwitch(app_manager.RyuApp):
 
         # Initialize data structures
         self.mac_to_port = {}
-        self.arp_table = {}  # IP -> MAC address table
+        self.arp_table = {}  # ARP table for learning IP -> MAC mappings
+        self.routing_table = {}  # Routing table for IP forwarding
 
-        # Define gateway IPs and their connected switches (port to gateway IP and MAC)
+        # Define gateways (connected to s1 as router)
         self.gateways = {
             '10.0.1.1': '00:00:00:00:01:01',  # Gateway for subnet 10.0.1.0/24
             '10.0.2.1': '00:00:00:00:01:02',  # Gateway for subnet 10.0.2.0/24
-            '192.168.1.1': '00:00:00:00:01:03'  # Gateway for Internet/other subnet
+            '192.168.1.1': '00:00:00:00:01:03'  # Gateway for subnet 192.168.1.0/24
         }
 
-        # Static routes for routing between subnets
+        # Static routing table entries (subnet -> gateway)
         self.routing_table = {
-            '10.0.2.0/24': '10.0.1.1',  # Route to 10.0.2.0/24 via gateway 10.0.1.1
-            '10.0.1.0/24': '10.0.2.1',  # Route to 10.0.1.0/24 via gateway 10.0.2.1
+            '10.0.2.0/24': '10.0.1.1',  # Route to subnet 10.0.2.0/24 via 10.0.1.1
+            '10.0.1.0/24': '10.0.2.1',  # Route to subnet 10.0.1.0/24 via 10.0.2.1
+            '192.168.1.0/24': '10.0.1.1',  # Route to subnet 192.168.1.0/24 via 10.0.1.1
         }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -104,9 +106,6 @@ class LearningSwitch(app_manager.RyuApp):
             if arp_pkt.opcode == arp.ARP_REQUEST:
                 # If this is an ARP request, reply with ARP_REPLY if we are the target
                 if arp_pkt.dst_ip in self.gateways:
-                    self._send_arp_reply(datapath, pkt, arp_pkt, in_port)
-                elif arp_pkt.dst_ip not in self.arp_table:
-                    # ARP request is for a host we do not know
                     self._send_arp_reply(datapath, pkt, arp_pkt, in_port)
                 return
 
@@ -168,4 +167,3 @@ class LearningSwitch(app_manager.RyuApp):
             in_port=datapath.ofproto.OFPP_CONTROLLER,
             actions=actions, data=arp_reply.data)
         datapath.send_msg(out)
-
