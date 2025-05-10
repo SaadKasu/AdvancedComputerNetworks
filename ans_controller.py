@@ -108,36 +108,6 @@ class LearningSwitch(app_manager.RyuApp):
 
         self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
         
-        #Handle ARP packets
-        arp_pkt = pkt.get_protocol(arp.arp)
-        if arp_pkt:
-            self.logger.info("ARP packet from %s to %s", arp_pkt.src_ip, arp_pkt.dst_ip)
-            self.arp_table[arp_pkt.src_ip] = src
-            if arp_pkt.opcode == arp.ARP_REQUEST:
-                if arp_pkt.dst_ip in self.arp_table:
-                    # Reply to ARP
-                    self._send_arp_reply(datapath, pkt, arp_pkt, in_port)
-                return
-
-        # Handle IPv4
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-        if ip_pkt:
-            dst_ip = ip_pkt.dst
-            if dst_ip in self.arp_table:
-                dst_mac = self.arp_table[dst_ip]
-                out_port = self.mac_to_port[dpid].get(dst_mac)
-                if out_port:
-                    actions = [parser.OFPActionOutput(out_port)]
-                    match = parser.OFPMatch(eth_type=0x0800, ipv4_dst=dst_ip)
-                    self.add_flow(datapath, 1, match, actions)
-                    out = parser.OFPPacketOut(datapath=datapath,
-                                              buffer_id=msg.buffer_id,
-                                              in_port=in_port,
-                                              actions=actions,
-                                              data=msg.data)
-                    datapath.send_msg(out)
-                    return
-
         actions = [parser.OFPActionOutput(out_port)]
 
         # install a flow to avoid packet_in next time
@@ -158,29 +128,3 @@ class LearningSwitch(app_manager.RyuApp):
                                   in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
 
-    def _send_arp_reply(self, datapath, pkt, arp_req, port):
-        eth_pkt = pkt.get_protocol(ethernet.ethernet)
-        dst_mac = eth_pkt.src
-        src_mac = self.arp_table.get(arp_req.dst_ip)
-        if not src_mac:
-            return
-
-        arp_reply = packet.Packet()
-        arp_reply.add_protocol(ethernet.ethernet(
-            ethertype=ether_types.ETH_TYPE_ARP,
-            dst=dst_mac,
-            src=src_mac))
-        arp_reply.add_protocol(arp.arp(
-            opcode=arp.ARP_REPLY,
-            src_mac=src_mac,
-            src_ip=arp_req.dst_ip,
-            dst_mac=dst_mac,
-            dst_ip=arp_req.src_ip))
-
-        arp_reply.serialize()
-        actions = [datapath.ofproto_parser.OFPActionOutput(port)]
-        out = datapath.ofproto_parser.OFPPacketOut(
-            datapath=datapath, buffer_id=datapath.ofproto.OFP_NO_BUFFER,
-            in_port=datapath.ofproto.OFPP_CONTROLLER,
-            actions=actions, data=arp_reply.data)
-        datapath.send_msg(out)
