@@ -72,7 +72,6 @@ class LearningSwitch(app_manager.RyuApp):
     # Handle the packet_in event
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)#This decorator tells Ryu when the decorated function should be called. The first argument of the decorator indicates which type of event this function should be called for. The second argument indicates the state of the switch. You probably want to ignore packet_in messages before the negotiation between Ryu and the switch is finished.
     def _packet_in_handler(self, ev):
-        
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
@@ -83,24 +82,16 @@ class LearningSwitch(app_manager.RyuApp):
         eth = pkt.get_protocols(ethernet.ethernet)[0]
 
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            # ignore lldp packet
-            return
+            return  # Ignore LLDP packets
+
         dst = eth.dst
         src = eth.src
-
-        dpid = format(datapath.id, "d").zfill(16) # Datapath Id is the unique ID for an openflow switch. z Fill will append the string at the start till it is 10 chars long.
+        dpid = format(datapath.id, "d").zfill(16)
         self.mac_to_port.setdefault(dpid, {})
 
-        # learn a mac address to avoid FLOOD next time.
+        # Learn MAC addresses
         self.mac_to_port[dpid][src] = in_port
 
-        if dst in self.mac_to_port[dpid]:
-            out_port = self.mac_to_port[dpid][dst]
-        else:
-            out_port = ofproto.OFPP_FLOOD
-
-        self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
-        
         # Handle ARP packets (to populate the ARP table)
         arp_pkt = pkt.get_protocol(arp.arp)
         if arp_pkt:
@@ -129,26 +120,22 @@ class LearningSwitch(app_manager.RyuApp):
                     out_port = self.mac_to_port[dpid].get(dst_mac, ofproto.OFPP_FLOOD)
                 else:
                     out_port = ofproto.OFPP_FLOOD
-        
-        actions = [parser.OFPActionOutput(out_port)]
 
-        # install a flow to avoid packet_in next time
-        if out_port != ofproto.OFPP_FLOOD:
-            match = parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src)
-            # verify if we have a valid buffer_id, if yes avoid to send both
-            # flow_mod & packet_out
+            actions = [parser.OFPActionOutput(out_port)]
+            match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
             if msg.buffer_id != ofproto.OFP_NO_BUFFER:
                 self.add_flow(datapath, 1, match, actions, msg.buffer_id)
                 return
             else:
                 self.add_flow(datapath, 1, match, actions)
-        data = None
-        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-            data = msg.data
 
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                  in_port=in_port, actions=actions, data=data)
-        datapath.send_msg(out)
+            # Forward the packet to the appropriate port
+            data = None
+            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+                data = msg.data
+            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                      in_port=in_port, actions=actions, data=data)
+            datapath.send_msg(out)
 
     def _send_arp_reply(self, datapath, pkt, arp_req, port):
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
