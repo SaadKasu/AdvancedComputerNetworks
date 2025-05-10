@@ -92,17 +92,12 @@ class LearningSwitch(app_manager.RyuApp):
         # Learn MAC addresses
         self.mac_to_port[dpid][src] = in_port
 
-        # Handle ARP packets (to populate the ARP table)
-        arp_pkt = pkt.get_protocol(arp.arp)
-        if arp_pkt:
-            self.logger.info(f"Received ARP packet: {arp_pkt.src_ip} -> {arp_pkt.dst_ip}")
-            self.arp_table[arp_pkt.src_ip] = arp_pkt.src_mac
+        if dst in self.mac_to_port[dpid]:
+            out_port = self.mac_to_port[dpid][dst]
+        else:
+            out_port = ofproto.OFPP_FLOOD
 
-            if arp_pkt.opcode == arp.ARP_REQUEST:
-                # If this is an ARP request, reply with ARP_REPLY if we are the target
-                if arp_pkt.dst_ip in self.gateways:
-                    self._send_arp_reply(datapath, pkt, arp_pkt, in_port)
-                return
+        self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, out_port)
 
         # Handle IPv4 packet forwarding (routing)
         ip_pkt = pkt.get_protocol(ipv4.ipv4)
