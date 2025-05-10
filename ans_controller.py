@@ -105,7 +105,7 @@ class LearningSwitch(app_manager.RyuApp):
         else:
             out_port = ofproto.OFPP_FLOOD
 
-        self.logger.info("packet in %s %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, pkt.dst_ip, pkt.src_ip)
+        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, pkt)
 
         actions = [parser.OFPActionOutput(out_port)]
 
