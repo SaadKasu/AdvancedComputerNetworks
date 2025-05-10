@@ -50,8 +50,7 @@ class LearningSwitch(app_manager.RyuApp):
             2: "10.0.2.1",
             3: "192.168.1.1"
         }
-
-         self.arp_table = {} 
+        self.arp_table = {} 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
