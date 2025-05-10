@@ -155,8 +155,7 @@ class LearningSwitch(app_manager.RyuApp):
                                   in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
 
-
- def _send_arp_reply(self, datapath, pkt, arp_req, port):
+    def _send_arp_reply(self, datapath, pkt, arp_req, port):
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
         dst_mac = eth_pkt.src
         src_mac = self.arp_table.get(arp_req.dst_ip)
