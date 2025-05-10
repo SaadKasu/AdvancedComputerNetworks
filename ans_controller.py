@@ -38,6 +38,16 @@ class LearningSwitch(app_manager.RyuApp):
 
         # Here you can initialize the data structures you want to keep at the controller
         self.mac_to_port = {}
+        self.port_to_own_mac = {
+            1: "00:00:00:00:01:01",
+            2: "00:00:00:00:01:02",
+            3: "00:00:00:00:01:03"
+        }
+        self.port_to_own_ip = {
+            1: "10.0.1.1",
+            2: "10.0.2.1",
+            3: "192.168.1.1"
+        }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -87,10 +97,8 @@ class LearningSwitch(app_manager.RyuApp):
         dst = eth.dst
         src = eth.src
 
-        dpid = format(datapath.id, "d").zfill(16)
+        dpid = format(datapath.id, "d").zfill(16) # Datapath Id is the unique ID for an openflow switch. z Fill will append the string at the start till it is 10 chars long.
         self.mac_to_port.setdefault(dpid, {})
-
-        self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
@@ -99,6 +107,8 @@ class LearningSwitch(app_manager.RyuApp):
             out_port = self.mac_to_port[dpid][dst]
         else:
             out_port = ofproto.OFPP_FLOOD
+
+        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, out_port, eth.ethertype)
 
         actions = [parser.OFPActionOutput(out_port)]
 
