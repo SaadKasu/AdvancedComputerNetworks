@@ -36,9 +36,9 @@ class PatchedRouter(app_manager.RyuApp):
 
         # Define interface MAC and IP per port
         self.port_to_own_mac = {
-            1: "00:00:00:00:01:01",
-            2: "00:00:00:00:01:02",
-            3: "00:00:00:00:01:03"
+            1: "00:00:00:00:01:01",  # Subnet A
+            2: "00:00:00:00:01:02",  # Subnet B
+            3: "00:00:00:00:01:03"   # Subnet C
         }
 
         self.port_to_own_ip = {
