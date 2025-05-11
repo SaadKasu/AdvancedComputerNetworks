@@ -27,23 +27,25 @@ from ryu.lib.packet import packet, ethernet, arp, ipv4, icmp
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import ether_types
 
-
 class LearningRouter(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(LearningRouter, self).__init__(*args, **kwargs)
-        self.arp_table = {}         # IP → (MAC, port)
-        self.router_ips = set()     # Track all IPs owned by the router
-        self.router_mac_by_port = {} # port → MAC
+        self.arp_table = {}  # IP → (MAC, port)
+        self.interface_ips = {
+            # Router interfaces: IP → {mac, port}
+            "10.0.1.1": {"mac": "00:00:00:00:01:01", "port": 1},
+            "10.0.2.1": {"mac": "00:00:00:00:01:02", "port": 2},
+            "192.168.1.1": {"mac": "00:00:00:00:01:03", "port": 3},
+        }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
 
-        # Send all unmatched packets to controller
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
@@ -52,7 +54,6 @@ class LearningRouter(app_manager.RyuApp):
     def add_flow(self, datapath, priority, match, actions):
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
-
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=priority,
@@ -61,120 +62,126 @@ class LearningRouter(app_manager.RyuApp):
         datapath.send_msg(mod)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
-    def packet_in_handler(self, ev):
+    def _packet_in_handler(self, ev):
         msg = ev.msg
         datapath = msg.datapath
-        in_port = msg.match['in_port']
-        ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+        in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
-        if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            return  # Ignore LLDP
-
         arp_pkt = pkt.get_protocol(arp.arp)
         ip_pkt = pkt.get_protocol(ipv4.ipv4)
 
-        if eth.src.startswith('00:00:00:00:01'):  # crude check for router's MAC
-            self.router_mac_by_port[in_port] = eth.src
+        if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
+            self.handle_arp(datapath, pkt, arp_pkt, in_port)
+        elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
+            self.handle_ip(datapath, pkt, ip_pkt, eth, in_port)
 
-        if arp_pkt:
-            self.arp_table[arp_pkt.src_ip] = (arp_pkt.src_mac, in_port)
-            if arp_pkt.opcode == arp.ARP_REQUEST:
-                if arp_pkt.dst_ip in self.router_ips:
-                    self.reply_arp(datapath, in_port, arp_pkt)
-        elif ip_pkt:
-            self.arp_table[ip_pkt.src] = (eth.src, in_port)
-            if ip_pkt.dst in self.arp_table:
-                dst_mac, out_port = self.arp_table[ip_pkt.dst]
-                self.forward_ip(datapath, pkt, eth, ip_pkt, in_port, out_port, dst_mac)
-            else:
-                self.logger.info("Unknown dst %s. Sending ARP.", ip_pkt.dst)
-                self.send_arp_request(datapath, ip_pkt.dst, in_port)
-
-    def reply_arp(self, datapath, port, arp_req):
-        ofproto = datapath.ofproto
+    def handle_arp(self, datapath, pkt, arp_pkt, in_port):
         parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+        src_ip = arp_pkt.src_ip
+        src_mac = arp_pkt.src_mac
+        dst_ip = arp_pkt.dst_ip
 
-        mac = self.router_mac_by_port.get(port)
-        if not mac:
-            self.logger.warning("No MAC known for port %d", port)
+        # Learn sender IP → (MAC, port)
+        self.arp_table[src_ip] = (src_mac, in_port)
+
+        # If the router owns the IP, reply directly
+        if dst_ip in self.interface_ips:
+            self.logger.info("ARP request for router IP %s -> replying", dst_ip)
+            mac = self.interface_ips[dst_ip]['mac']
+            eth = ethernet.ethernet(dst=src_mac, src=mac,
+                                    ethertype=ether_types.ETH_TYPE_ARP)
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY,
+                                src_mac=mac, src_ip=dst_ip,
+                                dst_mac=src_mac, dst_ip=src_ip)
+            reply_pkt = packet.Packet()
+            reply_pkt.add_protocol(eth)
+            reply_pkt.add_protocol(arp_reply)
+            reply_pkt.serialize()
+
+            actions = [parser.OFPActionOutput(in_port)]
+            out = parser.OFPPacketOut(datapath=datapath,
+                                      in_port=ofproto.OFPP_CONTROLLER,
+                                      buffer_id=ofproto.OFP_NO_BUFFER,
+                                      actions=actions,
+                                      data=reply_pkt.data)
+            datapath.send_msg(out)
             return
 
-        self.router_ips.add(arp_req.dst_ip)
+        # Proxy ARP if destination is known
+        if dst_ip in self.arp_table:
+            dst_mac, dst_port = self.arp_table[dst_ip]
+            out_iface = self.interface_ips[
+                next(ip for ip, info in self.interface_ips.items() if info["port"] == dst_port)
+            ]
+            mac = out_iface["mac"]
 
-        eth = ethernet.ethernet(dst=arp_req.src_mac, src=mac,
-                                ethertype=ether_types.ETH_TYPE_ARP)
-        arp_reply = arp.arp(opcode=arp.ARP_REPLY,
-                            src_mac=mac, src_ip=arp_req.dst_ip,
-                            dst_mac=arp_req.src_mac, dst_ip=arp_req.src_ip)
-        pkt = packet.Packet()
-        pkt.add_protocol(eth)
-        pkt.add_protocol(arp_reply)
-        pkt.serialize()
+            self.logger.info("Proxy ARP: replying for %s with MAC %s", dst_ip, dst_mac)
+            eth = ethernet.ethernet(dst=src_mac, src=mac,
+                                    ethertype=ether_types.ETH_TYPE_ARP)
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY,
+                                src_mac=dst_mac, src_ip=dst_ip,
+                                dst_mac=src_mac, dst_ip=src_ip)
+            reply_pkt = packet.Packet()
+            reply_pkt.add_protocol(eth)
+            reply_pkt.add_protocol(arp_reply)
+            reply_pkt.serialize()
 
-        actions = [parser.OFPActionOutput(port)]
-        out = parser.OFPPacketOut(datapath=datapath,
-                                  buffer_id=ofproto.OFP_NO_BUFFER,
-                                  in_port=ofproto.OFPP_CONTROLLER,
-                                  actions=actions, data=pkt.data)
-        datapath.send_msg(out)
+            actions = [parser.OFPActionOutput(in_port)]
+            out = parser.OFPPacketOut(datapath=datapath,
+                                      in_port=ofproto.OFPP_CONTROLLER,
+                                      buffer_id=ofproto.OFP_NO_BUFFER,
+                                      actions=actions,
+                                      data=reply_pkt.data)
+            datapath.send_msg(out)
 
-    def forward_ip(self, datapath, pkt, eth, ip_pkt, in_port, out_port, dst_mac):
+    def handle_ip(self, datapath, pkt, ip_pkt, eth, in_port):
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
 
-        new_eth = ethernet.ethernet(dst=dst_mac,
-                                    src=self.router_mac_by_port.get(out_port, eth.src),
-                                    ethertype=eth.ethertype)
-        pkt.protocols[0] = new_eth
+        src_ip = ip_pkt.src
+        dst_ip = ip_pkt.dst
+        src_mac = eth.src
+
+        # Learn source IP → (MAC, port)
+        self.arp_table[src_ip] = (src_mac, in_port)
+
+        # Drop if we don't know how to reach the destination
+        if dst_ip not in self.arp_table:
+            self.logger.info("Unknown destination IP %s — dropping packet", dst_ip)
+            return
+
+        dst_mac, out_port = self.arp_table[dst_ip]
+        if out_port == in_port:
+            self.logger.info("Skipping loop: out_port == in_port for IP %s", dst_ip)
+            return
+
+        # Get router MAC for out port
+        out_iface_ip = next(ip for ip, info in self.interface_ips.items() if info["port"] == out_port)
+        out_mac = self.interface_ips[out_iface_ip]["mac"]
+
+        # Rewrite Ethernet header
+        eth.src = out_mac
+        eth.dst = dst_mac
         pkt.serialize()
 
         actions = [parser.OFPActionOutput(out_port)]
         out = parser.OFPPacketOut(datapath=datapath,
                                   in_port=in_port,
+                                  buffer_id=ofproto.OFP_NO_BUFFER,
                                   actions=actions,
-                                  data=pkt.data,
-                                  buffer_id=ofproto.OFP_NO_BUFFER)
+                                  data=pkt.data)
         datapath.send_msg(out)
 
-        match = parser.OFPMatch(in_port=in_port,
-                                eth_type=ether_types.ETH_TYPE_IP,
-                                ipv4_src=ip_pkt.src,
-                                ipv4_dst=ip_pkt.dst)
-        self.add_flow(datapath, 1, match, actions)
-
-    def send_arp_request(self, datapath, dst_ip, in_port):
-        parser = datapath.ofproto_parser
-        ofproto = datapath.ofproto
-
-        src_mac = self.router_mac_by_port.get(in_port)
-        src_ip = None
-        for ip in self.router_ips:
-            if ip.startswith(dst_ip[:dst_ip.rfind('.')]):  # crude subnet match
-                src_ip = ip
-                break
-
-        if not src_mac or not src_ip:
-            self.logger.warning("No source IP/MAC to send ARP from")
-            return
-
-        eth = ethernet.ethernet(dst='ff:ff:ff:ff:ff:ff', src=src_mac,
-                                ethertype=ether_types.ETH_TYPE_ARP)
-        arp_req = arp.arp(opcode=arp.ARP_REQUEST,
-                          src_mac=src_mac, src_ip=src_ip,
-                          dst_mac='00:00:00:00:00:00', dst_ip=dst_ip)
-
-        pkt = packet.Packet()
-        pkt.add_protocol(eth)
-        pkt.add_protocol(arp_req)
-        pkt.serialize()
-
-        actions = [parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
-        out = parser.OFPPacketOut(datapath=datapath,
-                                  in_port=in_port,
-                                  actions=actions,
-                                  data=pkt.data,
-                                  buffer_id=ofproto.OFP_NO_BUFFER)
-        datapath.send_msg(out)
+        # Install flow for future packets
+        match = parser.OFPMatch(
+            in_port=in_port,
+            eth_type=ether_types.ETH_TYPE_IP,
+            ipv4_src=src_ip,
+            ipv4_dst=dst_ip
+        )
+        self.add_flow(datapath, 10, match, actions)
