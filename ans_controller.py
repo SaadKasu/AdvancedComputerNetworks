@@ -139,7 +139,7 @@ class LearningSwitch(app_manager.RyuApp):
         ofproto = datapath.ofproto
         dst_ip = arp_pkt.dst_ip
         src_ip = arp_pkt.src_ip
-        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : ",src_ip,dst_ip, in_port, arp_pkt.dst_mac, arp_pkt.dst_mac)
+        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",src_ip,dst_ip, in_port, arp_pkt.dst_mac, arp_pkt.dst_mac)
         # If the router owns the IP (destination IP is one of the router's IPs), reply
         
         if dst_ip == self.port_to_own_ip[in_port]:
