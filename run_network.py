@@ -47,10 +47,10 @@ class NetworkTopo(Topo):
 
         l1 = self.addLink(h1,s1, bw=15, delay='10ms', cls = TCLink)
         l2 = self.addLink(h2,s1, bw=15, delay='10ms', cls = TCLink)
-        l3 = self.addLink(s3,s1, bw=15, delay='10ms', cls = TCLink, port1=1)
+        l3 = self.addLink(s3,s1, bw=15, delay='10ms', cls = TCLink, port1=1, intfName2='s1-eth1', params2={'mac': '00:00:00:00:01:01'})
         l4 = self.addLink(ser,s2, bw=15, delay='10ms', cls = TCLink)
-        l5 = self.addLink(s3,s2, bw=15, delay='10ms', cls = TCLink, port1=2)
-        l6 = self.addLink(s3,ext, bw=15, delay='10ms', cls = TCLink, port1=3)
+        l5 = self.addLink(s3,s2, bw=15, delay='10ms', cls = TCLink, port1=2, intfName2='s1-eth2', params2={'mac': '00:00:00:00:01:02'})
+        l6 = self.addLink(s3,ext, bw=15, delay='10ms', cls = TCLink, port1=3,  intfName2='s1-eth3', params2={'mac': '00:00:00:00:01:03'})
 
 def run():
     topo = NetworkTopo()
