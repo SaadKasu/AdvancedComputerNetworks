@@ -86,6 +86,8 @@ class LearningSwitch(app_manager.RyuApp):
         in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
+        arp_pkt = pkt.get_protocol(arp.arp)
+        ip_pkt = pkt.get_protocol(ipv4.ipv4)
         eth = pkt.get_protocol(ethernet.ethernet)
 
         dst = eth.dst
