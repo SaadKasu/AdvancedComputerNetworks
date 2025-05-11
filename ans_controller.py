@@ -93,7 +93,7 @@ class LearningSwitch(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, eth, msg)
+        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, eth, datapath)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
