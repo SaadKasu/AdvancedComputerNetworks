@@ -38,6 +38,18 @@ class LearningSwitch(app_manager.RyuApp):
 
         # Here you can initialize the data structures you want to keep at the controller
         self.mac_to_port = {}
+        # Router port MACs assumed by the controller
+        port_to_own_mac = {
+            1: "00:00:00:00:01:01",
+            2: "00:00:00:00:01:02",
+            3: "00:00:00:00:01:03"
+        }
+        # Router port (gateways) IP addresses assumed by the controller
+        port_to_own_ip = {
+            1: "10.0.1.1",
+            2: "10.0.2.1",
+            3: "192.168.1.1"
+        }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -81,7 +93,7 @@ class LearningSwitch(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
+        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, eth, msg)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
