@@ -142,7 +142,7 @@ class LearningSwitch(app_manager.RyuApp):
         src_ip = arp_pkt.src_ip
         dst_mac = arp_pkt.src_mac
         src_mac = self.port_to_own_mac[in_port]  # Get router MAC for this port
-        self.logger.info("ARP Packet Info in %s %s %s %s %s %s", dst_ip, src_ip, dst_mac, src_mac, in_port)
+        self.logger.info("ARP Packet Info in %s %s %s %s %s", dst_ip, src_ip, dst_mac, src_mac, in_port)
         # If the router owns the IP (destination IP is one of the router's IPs), reply
         for port, ip in self.port_to_own_ip.items():
             if dst_ip == ip:
