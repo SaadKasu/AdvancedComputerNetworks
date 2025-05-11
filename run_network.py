@@ -36,10 +36,10 @@ class NetworkTopo(Topo):
         Topo.__init__(self)
 
         # Build the specified network topology here
-        h1 = self.addHost('h1', ip = '10.0.1.2/24',defaultRoute='via 10.0.1.1')
-        h2 = self.addHost('h2', ip = '10.0.1.3/24',defaultRoute='via 10.0.1.1')
-        ser = self.addHost('ser', ip = '10.0.2.2/24',defaultRoute='via 10.0.2.1')
-        ext = self.addHost('ext', ip = '192.168.1.123/24',defaultRoute='via 192.168.1.1')
+        h1 = self.addHost('h1', ip = '10.0.1.2/24')
+        h2 = self.addHost('h2', ip = '10.0.1.3/24')
+        ser = self.addHost('ser', ip = '10.0.2.2/24')
+        ext = self.addHost('ext', ip = '192.168.1.123/24')
 
         s1 = self.addSwitch('s1', cls = OVSKernelSwitch)
         s2 = self.addSwitch('s2', cls = OVSKernelSwitch)
@@ -64,19 +64,6 @@ def run():
         ip="127.0.0.1", 
         port=6653)
     net.start()
-    
-    s3 = net.get('s3')
-
-    # Manually assign IPs to router interfaces
-    s3.setIP('10.0.1.1/24', intf='s3-eth1')
-    s3.setIP('10.0.2.1/24', intf='s3-eth2')
-    s3.setIP('192.168.1.1/24', intf='s3-eth3')
-
-    # Send Gratuitous ARP so controller can learn
-    s3.cmd('arping -c 1 -A -I s3-eth0 10.0.1.1')
-    s3.cmd('arping -c 1 -A -I s3-eth1 10.0.2.1')
-    s3.cmd('arping -c 1 -A -I s3-eth2 192.168.1.1')
-    
     CLI(net)
     net.stop()
 
