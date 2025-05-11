@@ -52,6 +52,10 @@ class NetworkTopo(Topo):
         l5 = self.addLink(s3,s2, bw=15, delay='10ms', cls = TCLink)
         l6 = self.addLink(s3,ext, bw=15, delay='10ms', cls = TCLink)
 
+        s1.setMAC("00:00:00:00:01:01")  # Interface on s1
+        s2.setMAC("00:00:00:00:02:02")  # Interface on s2
+        s3.setMAC("00:00:00:00:03:03")  # Interface on s3
+
 def run():
     topo = NetworkTopo()
     net = Mininet(topo=topo,
