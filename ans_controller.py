@@ -101,12 +101,12 @@ class LearningSwitch(app_manager.RyuApp):
         
         if dpid==3:
             # Handle ARP packets
-            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
-                self.handle_arp(datapath, pkt, arp_pkt, in_port, eth)
+            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt.opcode == arp.ARP_REQUEST:
+                self.handle_arp(datapath, arp_pkt, in_port, eth)
                 return
             # Handle IP packets
-            elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
-                self.handle_ip(datapath, pkt, ip_pkt, in_port, eth)
+            elif eth.ethertype == ether_types.ETH_TYPE_IP:
+                self.handle_ip(datapath, ip_pkt, in_port, eth)
                 return
             return
 
@@ -119,11 +119,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
-            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions, msg.buffer_id)
-                return
-            else:
-                self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions)
+            self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions, msg.buffer_id)
 
         data = None
         if msg.buffer_id == ofproto.OFP_NO_BUFFER:
@@ -134,81 +130,92 @@ class LearningSwitch(app_manager.RyuApp):
             actions=actions, data=data)
         datapath.send_msg(out)
 
-    def handle_arp(self, datapath, pkt, arp_pkt, in_port, eth):
-        parser = datapath.ofproto_parser
-        ofproto = datapath.ofproto
-        dst_ip = arp_pkt.dst_ip
-        src_ip = arp_pkt.src_ip
-        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",src_ip,dst_ip, in_port, eth.src, eth.dst)
-        # If the router owns the IP (destination IP is one of the router's IPs), reply
+    def handle_arp(self, datapath, arp_pkt, in_port, eth):
+
+        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
         
-        if dst_ip == self.port_to_own_ip[in_port]:
+        if arp_pkt.dst_ip == self.port_to_own_ip[in_port]:
             self.logger.info("Inside The ARP if condition")
-            # Send ARP reply
-            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=self.port_to_own_mac[in_port], src_ip=self.port_to_own_ip[in_port], dst_mac=eth.src, dst_ip=src_ip)
-            eth = ethernet.ethernet(dst=eth.src, src=self.port_to_own_mac[in_port], ethertype=ether_types.ETH_TYPE_ARP)
-            reply_pkt = packet.Packet()
-            reply_pkt.add_protocol(eth)
-            reply_pkt.add_protocol(arp_reply)
-            reply_pkt.serialize()
-
-            actions = [parser.OFPActionOutput(in_port)]
-            out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
-                                      actions=actions, data=reply_pkt.data,
-                                      buffer_id=ofproto.OFP_NO_BUFFER)
-            datapath.send_msg(out)
+            
+            src_mac = self.port_to_own_mac[in_port]
+            src_ip = self.port_to_own_ip[in_port]
+            dst_ip = arp_pkt.src_ip
+            dst_mac = eth.src
 
         else:
-            self.logger.info("Inside The ARP else condition") 
-            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=eth.src, src_ip=src_ip, dst_mac=eth.dst, dst_ip=dst_ip)
-            eth = ethernet.ethernet(dst=eth.dst, src=eth.src, ethertype=ether_types.ETH_TYPE_ARP)
-            reply_pkt = packet.Packet()
-            reply_pkt.add_protocol(eth)
-            reply_pkt.add_protocol(arp_reply)
-            reply_pkt.serialize()
 
-            actions = [parser.OFPActionOutput(in_port)]
-            out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
-                                      actions=actions, data=reply_pkt.data,
-                                      buffer_id=ofproto.OFP_NO_BUFFER)
-            datapath.send_msg(out)    
+            self.logger.info("Inside The ARP else condition")
+            src_mac = eth.src
+            src_ip = arp_pkt.src_ip
+            dst_ip = arp_pkt.dst_ip
+            dst_mac = eth.dst             
+            
+        arp_reply = packet.Packet()
+        arp_reply.add_protocol(ethernet.ethernet(
+            ethertype = eth.ethertype,
+            dst = dst_mac,
+            src = src_mac
+        ))
+        arp_reply.add_protocol(arp.arp(
+            opcode = arp.ARP_REPLY,
+            src_mac = src_mac,
+            src_ip = src_ip,
+            dst_mac = dst_mac,
+            dst_ip = dst_ip
+        ))
+        arp_reply.serialize()
 
-    def handle_ip(self, datapath, pkt, ip_pkt, in_port, eth):
-        dst_ip = ip_pkt.dst
-        src_ip = ip_pkt.src
+        parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+        actions = [parser.OFPActionOutput(in_port)]
+        out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
+                                  actions=actions, data=arp_reply.data,
+                                  buffer_id=ofproto.OFP_NO_BUFFER)
+        datapath.send_msg(out)
+
+    def handle_ip(self, datapath, ip_pkt, in_port, eth):
+        
+        
+        self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",ip_pkt.src,ip_pkt.dst, in_port)
+
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
 
-        # Learn the source MAC and IP mapping
-        eth = pkt.get_protocol(ethernet.ethernet)
-        self.logger.info("Inside Handel IP eth_src : %s in_port: %s src_ip : %s", eth.src, in_port, src_ip)
-        self.arp_table[src_ip] = (eth.src, in_port)
+        for port, ip in self.port_to_own_ip.items():
+            if ip==ip_pkt.dst:
+                dst_mac=self.port_to_own_ip[port]
+                break
 
-        # Check if the destination IP is known
-        if dst_ip in self.arp_table:
-            # Get the destination MAC and output port from the ARP table
-            dst_mac, out_port = self.arp_table[dst_ip]
-            src_mac = self.port_to_own_mac[out_port]  # Get router MAC for this port
-
-            # Rewrite Ethernet frame with destination MAC and router's source MAC
-            eth.dst = dst_mac
-            eth.src = src_mac
-            pkt.serialize()
-
-            actions = [parser.OFPActionOutput(out_port)]
-            out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
-                                      data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
-            datapath.send_msg(out)
-
-            # Install flow to avoid future flooding of the same packet
-            match = parser.OFPMatch(in_port=in_port, eth_type=ether_types.ETH_TYPE_IP,
-                                    ipv4_dst=dst_ip, ipv4_src=src_ip)
-            self.add_flow(datapath, 1, match, actions)
+        if ip_pkt.dst.startswith('10.0.1.1'):
+            eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:01", ethertype=eth.ethertype)
+            src_mac = "00:00:00:00:01:01"
+            out_port = 1
+        elif ip_pkt.dst.startswith('10.0.2.1'):
+            eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:02", ethertype=eth.ethertype)
+            out_port = 2  # Assuming port 2 connects to 192.168.2.0/24 network
+            src_mac = "00:00:00:00:01:02"
         else:
-            # If destination IP is unknown, flood the IP packet
-            self.logger.info("Flooding IP packet for unknown destination Inside Handle IP: %s", dst_ip)
-            flood_ports = [port for port in self.port_to_own_mac if port != in_port]
-            actions = [parser.OFPActionOutput(port) for port in flood_ports]
-            out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
-                                      data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
-            datapath.send_msg(out)
+            self.logger.info("External Network")
+            return
+
+        ipv4_pkt = ipv4.ipv4(dst=ip_pkt.dst, src=ip_pkt.src, proto=ip_pkt.proto)
+        
+        pkt.add_protocol(eth_pkt)
+        pkt.add_protocol(ipv4_pkt)
+        pkt.serialize()
+
+        actions = [parser.OFPActionSetDlSrc(src_mac),
+                                parser.OFPActionSetDlDst(dst_mac),
+                                parser.OFPActionOutput(out_port)]
+        match = parser.OFPMatch(
+            dl_type=ether_types.ETH_TYPE_IP,
+            nw_src=ip_pkt.src,
+            nw_dst=ip_pkt.dst
+        )
+        
+        self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
+
+        out = parser.OFPPacketOut(
+            datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
+            actions=actions, data=pkt.data)
+        datapath.send_msg(out)
