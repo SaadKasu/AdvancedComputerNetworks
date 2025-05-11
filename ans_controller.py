@@ -173,7 +173,7 @@ class LearningSwitch(app_manager.RyuApp):
                                       buffer_id=ofproto.OFP_NO_BUFFER)
             datapath.send_msg(out)    
 
-    def handle_ip(self, datapath, pkt, ip_pkt, in_port):
+    def handle_ip(self, datapath, pkt, ip_pkt, in_port, eth):
         dst_ip = ip_pkt.dst
         src_ip = ip_pkt.src
         parser = datapath.ofproto_parser
