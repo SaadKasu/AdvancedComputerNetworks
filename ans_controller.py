@@ -39,17 +39,18 @@ class LearningSwitch(app_manager.RyuApp):
         # Here you can initialize the data structures you want to keep at the controller
         self.mac_to_port = {}
         # Router port MACs assumed by the controller
-        port_to_own_mac = {
+        self.port_to_own_mac = {
             1: "00:00:00:00:01:01",
             2: "00:00:00:00:01:02",
             3: "00:00:00:00:01:03"
         }
         # Router port (gateways) IP addresses assumed by the controller
-        port_to_own_ip = {
+        self.port_to_own_ip = {
             1: "10.0.1.1",
             2: "10.0.2.1",
             3: "192.168.1.1"
         }
+        self.arp_table = {}
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -98,6 +99,18 @@ class LearningSwitch(app_manager.RyuApp):
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
 
+        if dpid == 3:
+             # Handle ARP packets
+            self.logger.info("DPID : 3 and ethtype : %s",eth.ethertype)
+            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
+                self.handle_arp(datapath, pkt, arp_pkt, in_port)
+                return
+            # Handle IP packets
+            elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
+                self.handle_ip(datapath, pkt, ip_pkt, in_port)
+                return
+            return
+
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
         else:
@@ -121,3 +134,78 @@ class LearningSwitch(app_manager.RyuApp):
             datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port,
             actions=actions, data=data)
         datapath.send_msg(out)
+
+    def handle_arp(self, datapath, pkt, arp_pkt, in_port):
+        parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+        dst_ip = arp_pkt.dst_ip
+        src_ip = arp_pkt.src_ip
+        dst_mac = arp_pkt.src_mac
+        src_mac = self.port_to_own_mac[in_port]  # Get router MAC for this port
+
+        # If the router owns the IP (destination IP is one of the router's IPs), reply
+        for port, ip in self.port_to_own_ip.items():
+            if dst_ip == ip:
+                # Send ARP reply
+                arp_reply = arp.arp(opcode=arp.ARP_REPLY,
+                                    src_mac=src_mac, src_ip=dst_ip,
+                                    dst_mac=dst_mac, dst_ip=src_ip)
+                eth = ethernet.ethernet(dst=dst_mac, src=src_mac, ethertype=ether_types.ETH_TYPE_ARP)
+                reply_pkt = packet.Packet()
+                reply_pkt.add_protocol(eth)
+                reply_pkt.add_protocol(arp_reply)
+                reply_pkt.serialize()
+
+                actions = [parser.OFPActionOutput(in_port)]
+                out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
+                                          actions=actions, data=reply_pkt.data,
+                                          buffer_id=ofproto.OFP_NO_BUFFER)
+                datapath.send_msg(out)
+                return
+
+        # If the router does not own the IP, flood the ARP request
+        self.logger.info("Flooding ARP request for unknown IP: %s", dst_ip)
+        flood_ports = [port for port in self.port_to_own_mac if port != in_port]
+        actions = [parser.OFPActionOutput(port) for port in flood_ports]
+        out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
+                                  data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
+        datapath.send_msg(out)
+
+    def handle_ip(self, datapath, pkt, ip_pkt, in_port):
+        dst_ip = ip_pkt.dst
+        src_ip = ip_pkt.src
+        parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+
+        # Learn the source MAC and IP mapping
+        eth = pkt.get_protocol(ethernet.ethernet)
+        self.arp_table[src_ip] = (eth.src, in_port)
+
+        # Check if the destination IP is known
+        if dst_ip in self.arp_table:
+            # Get the destination MAC and output port from the ARP table
+            dst_mac, out_port = self.arp_table[dst_ip]
+            src_mac = self.port_to_own_mac[out_port]  # Get router MAC for this port
+
+            # Rewrite Ethernet frame with destination MAC and router's source MAC
+            eth.dst = dst_mac
+            eth.src = src_mac
+            pkt.serialize()
+
+            actions = [parser.OFPActionOutput(out_port)]
+            out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
+                                      data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
+            datapath.send_msg(out)
+
+            # Install flow to avoid future flooding of the same packet
+            match = parser.OFPMatch(in_port=in_port, eth_type=ether_types.ETH_TYPE_IP,
+                                    ipv4_dst=dst_ip, ipv4_src=src_ip)
+            self.add_flow(datapath, 1, match, actions)
+        else:
+            # If destination IP is unknown, flood the IP packet
+            self.logger.info("Flooding IP packet for unknown destination: %s", dst_ip)
+            flood_ports = [port for port in self.port_to_own_mac if port != in_port]
+            actions = [parser.OFPActionOutput(port) for port in flood_ports]
+            out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
+                                      data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
+            datapath.send_msg(out)
