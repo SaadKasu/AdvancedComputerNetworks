@@ -24,10 +24,11 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
+from ryu.lib.mac import haddr_to_bin
 from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet, arp, ipv4
+from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
-from ryu.lib import mac
+
 
 class LearningSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -35,37 +36,24 @@ class LearningSwitch(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(LearningSwitch, self).__init__(*args, **kwargs)
 
-        # Initialize data structures
+        # Here you can initialize the data structures you want to keep at the controller
         self.mac_to_port = {}
-        self.arp_table = {}  # ARP table for learning IP -> MAC mappings
-        self.routing_table = {}  # Routing table for IP forwarding
-
-        # Define gateways (connected to s1 as router)
-        self.gateways = {
-            '10.0.1.1': '00:00:00:00:01:01',  # Gateway for subnet 10.0.1.0/24
-            '10.0.2.1': '00:00:00:00:01:02',  # Gateway for subnet 10.0.2.0/24
-            '192.168.1.1': '00:00:00:00:01:03'  # Gateway for subnet 192.168.1.0/24
-        }
-
-        # Static routing table entries (subnet -> gateway)
-        self.routing_table = {
-            '10.0.2.0/24': '10.0.1.1',  # Route to subnet 10.0.2.0/24 via 10.0.1.1
-            '10.0.1.0/24': '10.0.2.1',  # Route to subnet 10.0.1.0/24 via 10.0.2.1
-            '192.168.1.0/24': '10.0.1.1',  # Route to subnet 192.168.1.0/24 via 10.0.1.1
-        }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
+        
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        # Install a table-miss flow entry (misses go to the controller)
+        # Initial flow entry for matching misses
         match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None):
+    # Add a flow entry to the flow-table
+    def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -75,95 +63,48 @@ class LearningSwitch(app_manager.RyuApp):
                                 match=match, instructions=inst)
         datapath.send_msg(mod)
 
-    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    # Handle the packet_in event
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)#This decorator tells Ryu when the decorated function should be called. The first argument of the decorator indicates which type of event this function should be called for. The second argument indicates the state of the switch. You probably want to ignore packet_in messages before the negotiation between Ryu and the switch is finished.
     def _packet_in_handler(self, ev):
+        
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
-        eth = pkt.get_protocols(ethernet.ethernet)[0]
-
-        if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            return  # Ignore LLDP packets
+        eth = pkt.get_protocol(ethernet.ethernet)
 
         dst = eth.dst
         src = eth.src
-        dpid = format(datapath.id, "d").zfill(16)
+
+        dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        # Learn MAC addresses
-        self.mac_to_port[dpid][src] = in_port
+        self.logger.info("packet in %s %s %s %s", dpid, src, dst, msg.in_port)
 
-        # Handle ARP packets (to populate the ARP table)
-        arp_pkt = pkt.get_protocol(arp.arp)
-        if arp_pkt:
-            self.logger.info(f"Received ARP packet: {arp_pkt.src_ip} -> {arp_pkt.dst_ip}")
-            self.arp_table[arp_pkt.src_ip] = arp_pkt.src_mac
+        # learn a mac address to avoid FLOOD next time.
+        self.mac_to_port[dpid][src] = msg.in_port
 
-            if arp_pkt.opcode == arp.ARP_REQUEST:
-                # If this is an ARP request, reply with ARP_REPLY if we are the target
-                if arp_pkt.dst_ip in self.gateways:
-                    self._send_arp_reply(datapath, pkt, arp_pkt, in_port)
-                return
+        if dst in self.mac_to_port[dpid]:
+            out_port = self.mac_to_port[dpid][dst]
+        else:
+            out_port = ofproto.OFPP_FLOOD
 
-        # Handle IPv4 packet forwarding (routing)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-        if ip_pkt:
-            dst_ip = ip_pkt.dst
-            if dst_ip in self.gateways:
-                # If the destination is a local gateway, use the MAC address from the gateway table
-                dst_mac = self.gateways[dst_ip]
-                out_port = self.mac_to_port[dpid].get(dst_mac, ofproto.OFPP_FLOOD)
-            else:
-                # Use routing table for routing between different subnets
-                next_hop_ip = self.routing_table.get(dst_ip)
-                if next_hop_ip and next_hop_ip in self.arp_table:
-                    dst_mac = self.arp_table[next_hop_ip]
-                    out_port = self.mac_to_port[dpid].get(dst_mac, ofproto.OFPP_FLOOD)
-                else:
-                    out_port = ofproto.OFPP_FLOOD
+        actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
 
-            actions = [parser.OFPActionOutput(out_port)]
-            match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                self.add_flow(datapath, 1, match, actions, msg.buffer_id)
-                return
-            else:
-                self.add_flow(datapath, 1, match, actions)
+        # install a flow to avoid packet_in next time
+        if out_port != ofproto.OFPP_FLOOD:
+            self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY,
+            datapath.ofproto_parser.OFPMatch(
+            in_port=msg.in_port,
+            dl_dst=haddr_to_bin(dst), dl_src=haddr_to_bin(src))            
+            , actions)
 
-            # Forward the packet to the appropriate port
-            data = None
-            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-                data = msg.data
-            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                      in_port=in_port, actions=actions, data=data)
-            datapath.send_msg(out)
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
 
-    def _send_arp_reply(self, datapath, pkt, arp_req, port):
-        eth_pkt = pkt.get_protocol(ethernet.ethernet)
-        src_mac = self.gateways.get(arp_req.dst_ip)
-        if not src_mac:
-            return
-
-        arp_reply = packet.Packet()
-        arp_reply.add_protocol(ethernet.ethernet(
-            ethertype=ether_types.ETH_TYPE_ARP,
-            dst=arp_req.src_mac,
-            src=src_mac))
-        arp_reply.add_protocol(arp.arp(
-            opcode=arp.ARP_REPLY,
-            src_mac=src_mac,
-            src_ip=arp_req.dst_ip,
-            dst_mac=arp_req.src_mac,
-            dst_ip=arp_req.src_ip))
-
-        arp_reply.serialize()
-        actions = [datapath.ofproto_parser.OFPActionOutput(port)]
         out = datapath.ofproto_parser.OFPPacketOut(
-            datapath=datapath, buffer_id=datapath.ofproto.OFP_NO_BUFFER,
-            in_port=datapath.ofproto.OFPP_CONTROLLER,
-            actions=actions, data=arp_reply.data)
+            datapath=datapath, buffer_id=msg.buffer_id, in_port=msg.in_port,
+            actions=actions, data=data)
         datapath.send_msg(out)
