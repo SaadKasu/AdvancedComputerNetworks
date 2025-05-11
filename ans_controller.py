@@ -102,11 +102,11 @@ class LearningSwitch(app_manager.RyuApp):
         if dpid==3:
             # Handle ARP packets
             if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
-                self.handle_arp(datapath, pkt, arp_pkt, in_port)
+                self.handle_arp(datapath, pkt, arp_pkt, in_port, eth)
                 return
             # Handle IP packets
             elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
-                self.handle_ip(datapath, pkt, ip_pkt, in_port)
+                self.handle_ip(datapath, pkt, ip_pkt, in_port, eth)
                 return
             return
 
@@ -134,19 +134,19 @@ class LearningSwitch(app_manager.RyuApp):
             actions=actions, data=data)
         datapath.send_msg(out)
 
-    def handle_arp(self, datapath, pkt, arp_pkt, in_port):
+    def handle_arp(self, datapath, pkt, arp_pkt, in_port, eth):
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
         dst_ip = arp_pkt.dst_ip
         src_ip = arp_pkt.src_ip
-        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",src_ip,dst_ip, in_port, arp_pkt.dst_mac, arp_pkt.dst_mac)
+        self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",src_ip,dst_ip, in_port, eth.src, eth.dst)
         # If the router owns the IP (destination IP is one of the router's IPs), reply
         
         if dst_ip == self.port_to_own_ip[in_port]:
             self.logger.info("Inside The ARP if condition")
             # Send ARP reply
-            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=self.port_to_own_mac[in_port], src_ip=self.port_to_own_ip[in_port], dst_mac=arp_pkt.src_mac, dst_ip=src_ip)
-            eth = ethernet.ethernet(dst=arp_pkt.src_mac, src=self.port_to_own_mac[in_port], ethertype=ether_types.ETH_TYPE_ARP)
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=self.port_to_own_mac[in_port], src_ip=self.port_to_own_ip[in_port], dst_mac=eth.src, dst_ip=src_ip)
+            eth = ethernet.ethernet(dst=eth.src, src=self.port_to_own_mac[in_port], ethertype=ether_types.ETH_TYPE_ARP)
             reply_pkt = packet.Packet()
             reply_pkt.add_protocol(eth)
             reply_pkt.add_protocol(arp_reply)
@@ -160,8 +160,8 @@ class LearningSwitch(app_manager.RyuApp):
 
         else:
             self.logger.info("Inside The ARP else condition") 
-            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=arp_pkt.src_mac, src_ip=src_ip, dst_mac=arp_pkt.dst_mac, dst_ip=dst_ip)
-            eth = ethernet.ethernet(dst=arp_pkt.dst_mac, src=arp_pkt.src_mac, ethertype=ether_types.ETH_TYPE_ARP)
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=eth.src, src_ip=src_ip, dst_mac=eth.dst, dst_ip=dst_ip)
+            eth = ethernet.ethernet(dst=eth.dst, src=eth.src, ethertype=ether_types.ETH_TYPE_ARP)
             reply_pkt = packet.Packet()
             reply_pkt.add_protocol(eth)
             reply_pkt.add_protocol(arp_reply)
