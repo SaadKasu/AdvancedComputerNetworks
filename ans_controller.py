@@ -205,9 +205,9 @@ class LearningSwitch(app_manager.RyuApp):
                                 parser.OFPActionSetField(eth_dst=dst_mac),
                                 parser.OFPActionOutput(out_port)]
         match = parser.OFPMatch(
-            dl_type=ether_types.ETH_TYPE_IP,
-            nw_src=ip_pkt.src,
-            nw_dst=ip_pkt.dst
+            eth_type=ether_types.ETH_TYPE_IP,
+            ipv4_src=ip_pkt.src,
+            ipv4_dst=ip_pkt.dst
         )
         
         self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
