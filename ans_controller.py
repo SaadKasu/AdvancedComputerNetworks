@@ -186,11 +186,11 @@ class LearningSwitch(app_manager.RyuApp):
                 dst_mac=self.port_to_own_ip[port]
                 break
 
-        if ip_pkt.dst.startswith('10.0.1.1'):
+        if ip_pkt.dst.startswith('10.0.1'):
             eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:01", ethertype=eth.ethertype)
             src_mac = "00:00:00:00:01:01"
             out_port = 1
-        elif ip_pkt.dst.startswith('10.0.2.1'):
+        elif ip_pkt.dst.startswith('10.0.2'):
             eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:02", ethertype=eth.ethertype)
             out_port = 2  # Assuming port 2 connects to 192.168.2.0/24 network
             src_mac = "00:00:00:00:01:02"
