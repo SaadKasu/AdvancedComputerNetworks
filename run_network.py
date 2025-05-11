@@ -64,6 +64,19 @@ def run():
         ip="127.0.0.1", 
         port=6653)
     net.start()
+    
+    s3 = net.get('s3')
+
+    # Manually assign IPs to router interfaces
+    s3.setIP('10.0.1.1/24', intf='s3-eth0')
+    s3.setIP('10.0.2.1/24', intf='s3-eth1')
+    s3.setIP('192.168.1.1/24', intf='s3-eth2')
+
+    # Send Gratuitous ARP so controller can learn
+    s3.cmd('arping -c 1 -A -I s3-eth0 10.0.1.1')
+    s3.cmd('arping -c 1 -A -I s3-eth1 10.0.2.1')
+    s3.cmd('arping -c 1 -A -I s3-eth2 192.168.1.1')
+    
     CLI(net)
     net.stop()
 
