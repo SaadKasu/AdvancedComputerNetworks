@@ -98,16 +98,17 @@ class LearningSwitch(app_manager.RyuApp):
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
-
-        # Handle ARP packets
-        if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
-            self.handle_arp(datapath, pkt, arp_pkt, in_port)
+        
+        if dspid=3
+            # Handle ARP packets
+            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
+                self.handle_arp(datapath, pkt, arp_pkt, in_port)
+                return
+            # Handle IP packets
+            elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
+                self.handle_ip(datapath, pkt, ip_pkt, in_port)
+                return
             return
-        # Handle IP packets
-        elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
-            self.handle_ip(datapath, pkt, ip_pkt, in_port)
-            return
-        return
 
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
