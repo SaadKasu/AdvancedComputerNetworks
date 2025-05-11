@@ -57,7 +57,7 @@ def run():
     net = Mininet(topo=topo,
                   switch=OVSKernelSwitch,
                   link=TCLink,
-                  controller=None, autoSetMacs=false)
+                  controller=None, autoSetMacs=False)
     net.addController(
         'c1', 
         controller=RemoteController, 
