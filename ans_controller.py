@@ -70,6 +70,7 @@ class LearningSwitch(app_manager.RyuApp):
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
+        in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
@@ -80,10 +81,10 @@ class LearningSwitch(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s", dpid, src, dst, msg.in_port)
+        self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
         # learn a mac address to avoid FLOOD next time.
-        self.mac_to_port[dpid][src] = msg.in_port
+        self.mac_to_port[dpid][src] = in_port
 
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
@@ -96,7 +97,7 @@ class LearningSwitch(app_manager.RyuApp):
         if out_port != ofproto.OFPP_FLOOD:
             self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY,
             datapath.ofproto_parser.OFPMatch(
-            in_port=msg.in_port,
+            in_port,
             dl_dst=haddr_to_bin(dst), dl_src=haddr_to_bin(src))            
             , actions)
 
@@ -105,6 +106,6 @@ class LearningSwitch(app_manager.RyuApp):
             data = msg.data
 
         out = datapath.ofproto_parser.OFPPacketOut(
-            datapath=datapath, buffer_id=msg.buffer_id, in_port=msg.in_port,
+            datapath=datapath, buffer_id=msg.buffer_id, in_port,
             actions=actions, data=data)
         datapath.send_msg(out)
