@@ -201,8 +201,8 @@ class LearningSwitch(app_manager.RyuApp):
         pkt.add_protocol(ipv4_pkt)
         pkt.serialize()
 
-        actions = [parser.OFPActionSetDlSrc(src_mac),
-                                parser.OFPActionSetDlDst(dst_mac),
+        actions = [parser.OFPActionSetField(eth_src=src_mac),
+                                parser.OFPActionSetField(eth_dst=dst_mac),
                                 parser.OFPActionOutput(out_port)]
         match = parser.OFPMatch(
             dl_type=ether_types.ETH_TYPE_IP,
