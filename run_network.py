@@ -48,17 +48,17 @@ class NetworkTopo(Topo):
 
         # Connect s3 to s1 with MAC on s3 side
         self.addLink(s3, s1, bw=15, delay='10ms', cls=TCLink,
-                     intfName1='s3-eth1', params1={'mac': '00:00:00:00:01:01'})
+                     intfName='s3-eth1', params={'mac': '00:00:00:00:01:01'})
 
         self.addLink(ser, s2, bw=15, delay='10ms', cls=TCLink)
 
         # Connect s3 to s2 with MAC on s3 side
         self.addLink(s3, s2, bw=15, delay='10ms', cls=TCLink,
-                     intfName1='s3-eth2', params1={'mac': '00:00:00:00:01:02'})
+                     intfName='s3-eth2', params={'mac': '00:00:00:00:01:02'})
 
         # Connect s3 to ext host with MAC on s3 side
         self.addLink(s3, ext, bw=15, delay='10ms', cls=TCLink,
-                     intfName1='s3-eth3', params1={'mac': '00:00:00:00:01:03'})
+                     intfName='s3-eth3', params={'mac': '00:00:00:00:01:03'})
 
 def run():
     topo = NetworkTopo()
