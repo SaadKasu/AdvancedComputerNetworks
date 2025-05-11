@@ -181,10 +181,7 @@ class LearningSwitch(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
 
-        for port, ip in self.port_to_own_ip.items():
-            if ip==ip_pkt.dst:
-                dst_mac=self.port_to_own_ip[port]
-                break
+        dst_mac=self.port_to_own_ip[port]
 
         if ip_pkt.dst.startswith('10.0.1'):
             eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:01", ethertype=eth.ethertype)
