@@ -106,7 +106,7 @@ class LearningSwitch(app_manager.RyuApp):
                 return
             # Handle IP packets
             elif eth.ethertype == ether_types.ETH_TYPE_IP:
-                self.handle_ip(datapath, ip_pkt, in_port, eth)
+                self.handle_ip(datapath, pkt, ip_pkt, in_port, eth)
                 return
             return
 
@@ -173,7 +173,7 @@ class LearningSwitch(app_manager.RyuApp):
                                   buffer_id=ofproto.OFP_NO_BUFFER)
         datapath.send_msg(out)
 
-    def handle_ip(self, datapath, ip_pkt, in_port, eth):
+    def handle_ip(self, datapath, pkt, ip_pkt, in_port, eth):
         
         
         self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",ip_pkt.src,ip_pkt.dst, in_port)
