@@ -139,42 +139,39 @@ class LearningSwitch(app_manager.RyuApp):
         ofproto = datapath.ofproto
         dst_ip = arp_pkt.dst_ip
         src_ip = arp_pkt.src_ip
-        dst_mac = arp_pkt.src_mac
-        src_mac = self.port_to_own_mac[in_port]  # Get router MAC for this port
-        self.logger.info("ARP Packet Info in %s %s %s %s %s", dst_ip, src_ip, dst_mac, src_mac, in_port)
+        self.logger.info("Handling an ARP Request")
         # If the router owns the IP (destination IP is one of the router's IPs), reply
         
-        for port, ip in self.port_to_own_ip.items():
-            split_known_ip = ip.split(".")
-            split_dst_ip = dst_ip.split(".")
-            joined_known = '.'.join(split_known_ip[0:len(split_known_ip) -1])
-            joined_dst = '.'.join(split_dst_ip[0:len(split_dst_ip) -1])
-            self.logger.info("Joined Known: %s Joined DST:%s", joined_known, joined_dst)
-            if joined_known == joined_dst:
-                # Send ARP reply
-                arp_reply = arp.arp(opcode=arp.ARP_REPLY,
-                                    src_mac=src_mac, src_ip=dst_ip,
-                                    dst_mac=dst_mac, dst_ip=src_ip)
-                eth = ethernet.ethernet(dst=dst_mac, src=src_mac, ethertype=ether_types.ETH_TYPE_ARP)
-                reply_pkt = packet.Packet()
-                reply_pkt.add_protocol(eth)
-                reply_pkt.add_protocol(arp_reply)
-                reply_pkt.serialize()
+        if dst_ip == self.port_to_own_ip[in_port]:
+            self.logger.info("Inside The ARP if condition")
+            # Send ARP reply
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=self.port_to_own_mac[in_port], src_ip=self.port_to_own_ip[in_port], dst_mac=arp_pkt.src_mac, dst_ip=src_ip)
+            eth = ethernet.ethernet(dst=arp_pkt.src_mac, src=self.port_to_own_mac[in_port], ethertype=ether_types.ETH_TYPE_ARP)
+            reply_pkt = packet.Packet()
+            reply_pkt.add_protocol(eth)
+            reply_pkt.add_protocol(arp_reply)
+            reply_pkt.serialize()
 
-                actions = [parser.OFPActionOutput(in_port)]
-                out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
-                                          actions=actions, data=reply_pkt.data,
-                                          buffer_id=ofproto.OFP_NO_BUFFER)
-                datapath.send_msg(out)
-                return
+            actions = [parser.OFPActionOutput(in_port)]
+            out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
+                                      actions=actions, data=reply_pkt.data,
+                                      buffer_id=ofproto.OFP_NO_BUFFER)
+            datapath.send_msg(out)
 
-        # If the router does not own the IP, flood the ARP request
-        self.logger.info("Flooding ARP request for unknown IP Inside Handel ARP: %s", dst_ip)
-        flood_ports = [port for port in self.port_to_own_mac if port != in_port]
-        actions = [parser.OFPActionOutput(port) for port in flood_ports]
-        out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
-                                  data=pkt.data, buffer_id=ofproto.OFP_NO_BUFFER)
-        datapath.send_msg(out)
+        else:
+            self.logger.info("Inside The ARP else condition") 
+            arp_reply = arp.arp(opcode=arp.ARP_REPLY, src_mac=arp_pkt.src_mac, src_ip=src_ip, dst_mac=arp_pkt.dst_mac, dst_ip=dst_ip)
+            eth = ethernet.ethernet(dst=arp_pkt.dst_mac, src=arp_pkt.src_mac, ethertype=ether_types.ETH_TYPE_ARP)
+            reply_pkt = packet.Packet()
+            reply_pkt.add_protocol(eth)
+            reply_pkt.add_protocol(arp_reply)
+            reply_pkt.serialize()
+
+            actions = [parser.OFPActionOutput(in_port)]
+            out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
+                                      actions=actions, data=reply_pkt.data,
+                                      buffer_id=ofproto.OFP_NO_BUFFER)
+            datapath.send_msg(out)    
 
     def handle_ip(self, datapath, pkt, ip_pkt, in_port):
         dst_ip = ip_pkt.dst
