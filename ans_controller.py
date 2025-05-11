@@ -99,17 +99,15 @@ class LearningSwitch(app_manager.RyuApp):
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
 
-        if dpid == 3:
-             # Handle ARP packets
-            self.logger.info("DPID : 3 and ethtype : %s",eth.ethertype)
-            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
-                self.handle_arp(datapath, pkt, arp_pkt, in_port)
-                return
-            # Handle IP packets
-            elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
-                self.handle_ip(datapath, pkt, ip_pkt, in_port)
-                return
+        # Handle ARP packets
+        if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt:
+            self.handle_arp(datapath, pkt, arp_pkt, in_port)
             return
+        # Handle IP packets
+        elif eth.ethertype == ether_types.ETH_TYPE_IP and ip_pkt:
+            self.handle_ip(datapath, pkt, ip_pkt, in_port)
+            return
+        return
 
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
@@ -144,8 +142,14 @@ class LearningSwitch(app_manager.RyuApp):
         src_mac = self.port_to_own_mac[in_port]  # Get router MAC for this port
         self.logger.info("ARP Packet Info in %s %s %s %s %s", dst_ip, src_ip, dst_mac, src_mac, in_port)
         # If the router owns the IP (destination IP is one of the router's IPs), reply
+        
         for port, ip in self.port_to_own_ip.items():
-            if dst_ip == ip:
+            split_known_ip = ip.split(".")
+            split_dst_ip = dst_ip.split(".")
+            joined_known = '.'.join(split_known_ip[0:len(split_known_ip) -1])
+            joined_dst = '.'.join(split_dst_ip[0:len(split_dst_ip) -1])
+            self.logger.info("Joined Known: %s Joined DST:%s", joined_known, joined_dst)
+            if joined_known == joined_dst:
                 # Send ARP reply
                 arp_reply = arp.arp(opcode=arp.ARP_REPLY,
                                     src_mac=src_mac, src_ip=dst_ip,
@@ -164,7 +168,7 @@ class LearningSwitch(app_manager.RyuApp):
                 return
 
         # If the router does not own the IP, flood the ARP request
-        self.logger.info("Flooding ARP request for unknown IP: %s", dst_ip)
+        self.logger.info("Flooding ARP request for unknown IP Inside Handel ARP: %s", dst_ip)
         flood_ports = [port for port in self.port_to_own_mac if port != in_port]
         actions = [parser.OFPActionOutput(port) for port in flood_ports]
         out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
@@ -179,6 +183,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         # Learn the source MAC and IP mapping
         eth = pkt.get_protocol(ethernet.ethernet)
+        self.logger.info("Inside Handel IP eth_src : %s in_port: %s src_ip : %s", eth.src, in_port, src_ip)
         self.arp_table[src_ip] = (eth.src, in_port)
 
         # Check if the destination IP is known
@@ -203,7 +208,7 @@ class LearningSwitch(app_manager.RyuApp):
             self.add_flow(datapath, 1, match, actions)
         else:
             # If destination IP is unknown, flood the IP packet
-            self.logger.info("Flooding IP packet for unknown destination: %s", dst_ip)
+            self.logger.info("Flooding IP packet for unknown destination Inside Handle IP: %s", dst_ip)
             flood_ports = [port for port in self.port_to_own_mac if port != in_port]
             actions = [parser.OFPActionOutput(port) for port in flood_ports]
             out = parser.OFPPacketOut(datapath=datapath, in_port=in_port, actions=actions,
