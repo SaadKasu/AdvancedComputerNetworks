@@ -168,7 +168,7 @@ class StaticLearningRouter(app_manager.RyuApp):
                 data=msg.data
             )
             dp.send_msg(out)
-
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def handle_arp(self, pkt, dp, in_port):
         parser = dp.ofproto_parser
         ofproto = dp.ofproto
