@@ -96,7 +96,7 @@ class LearningSwitch(app_manager.RyuApp):
         
         if dpid==3:
             # Handle ARP packets
-            if eth.ethertype == ether_types.ETH_TYPE_ARP
+            if eth.ethertype == ether_types.ETH_TYPE_ARP:
                 self.handle_arp(datapath,pkt, in_port, eth)
             # Handle IP packets
             elif eth.ethertype == ether_types.ETH_TYPE_IP:
@@ -229,8 +229,8 @@ class LearningSwitch(app_manager.RyuApp):
         datapath.send_msg(out)
 
     def get_out_port(self, dst_ip):
-        if dst_ip.startswith('10.0.1')
+        if dst_ip.startswith('10.0.1'):
             return 1
-        else if dst_ip.startswith('10.0.2')
+        else if dst_ip.startswith('10.0.2'):
             return 2
         return 3
