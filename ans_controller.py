@@ -81,34 +81,34 @@ class LearningSwitch(app_manager.RyuApp):
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
-        arp_pkt = pkt.get_protocol(arp.arp)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
         eth = pkt.get_protocol(ethernet.ethernet)
 
         dst = eth.dst
         src = eth.src
 
         dpid = datapath.id
-        self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, in_port, eth, datapath)
-
-        # learn a mac address to avoid FLOOD next time.
-        self.mac_to_port[dpid][src] = in_port
+        self.logger.info("packet in Inport : %s SRC : %s DST: %s Ether Type : %s DPID : %s", in_port, src, dst, eth.ethertype, dpid)
         
         if dpid==3:
             # Handle ARP packets
-            if eth.ethertype == ether_types.ETH_TYPE_ARP and arp_pkt.opcode == arp.ARP_REQUEST:
-                self.handle_arp(datapath, arp_pkt, in_port, eth)
-                return
+            if eth.ethertype == ether_types.ETH_TYPE_ARP
+                self.handle_arp(datapath,pkt, in_port, eth)
             # Handle IP packets
             elif eth.ethertype == ether_types.ETH_TYPE_IP:
-                self.handle_ip(datapath, pkt, ip_pkt, in_port, eth)
-                return
+                self.handle_ip(datapath, pkt,in_port, eth)
             return
+
+        ## SWITCH FUNCTIONALITY
+
+        self.mac_to_port.setdefault(dpid, {})
+
+        # learn a mac address to avoid FLOOD next time.
+        self.mac_to_port[dpid][src] = in_port
 
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
@@ -119,7 +119,11 @@ class LearningSwitch(app_manager.RyuApp):
 
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
-            self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions)
+            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+                self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions, msg.buffer_id)
+                return
+            else:
+                self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, datapath.ofproto_parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src), actions)
 
         data = None
         if msg.buffer_id == ofproto.OFP_NO_BUFFER:
@@ -130,25 +134,31 @@ class LearningSwitch(app_manager.RyuApp):
             actions=actions, data=data)
         datapath.send_msg(out)
 
-    def handle_arp(self, datapath, arp_pkt, in_port, eth):
+    def handle_arp(self, datapath, pkt, in_port, eth):
+        
+        arp_pkt = pkt.get_protocol(arp.arp)
 
         self.logger.info("Handling an ARP Request SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
         
         if arp_pkt.dst_ip == self.port_to_own_ip[in_port]:
-            self.logger.info("Inside The ARP if condition")
+            self.logger.info("Inside The ARP if condition, Learn The Mac Of The Router")
             
             src_mac = self.port_to_own_mac[in_port]
             src_ip = self.port_to_own_ip[in_port]
             dst_ip = arp_pkt.src_ip
             dst_mac = eth.src
+            dst = eth.src
+            src = src_mac
 
         else:
 
-            self.logger.info("Inside The ARP else condition")
-            src_mac = eth.src
-            src_ip = arp_pkt.src_ip
+            self.logger.info("Inside The ARP else condition, Learn The Mac Of the Host")
+            out_port = self.get_out_port(arp_pkt.dst_ip)
+            src_mac = self.port_to_own_mac[out_port]
+            src_ip = self.port_to_own_ip[out_port]
             dst_ip = arp_pkt.dst_ip
-            dst_mac = eth.dst             
+            dst_mac = eth.dst
+            dst = dst             
             
         arp_reply = packet.Packet()
         arp_reply.add_protocol(ethernet.ethernet(
@@ -173,15 +183,16 @@ class LearningSwitch(app_manager.RyuApp):
                                   buffer_id=ofproto.OFP_NO_BUFFER)
         datapath.send_msg(out)
 
-    def handle_ip(self, datapath, pkt, ip_pkt, in_port, eth):
+    def handle_ip(self, datapath, pkt, in_port, eth):
         
-        
+        ip_pkt = pkt.get_protocol(ipv4.ipv4)        
+    
         self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",ip_pkt.src,ip_pkt.dst, in_port)
 
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
-
-        dst_mac=self.port_to_own_mac[in_port]
+        out_port = self.get_out_port(ip_pkt.dst_ip)
+        dst_mac=self.port_to_own_mac[out_port]
 
         if ip_pkt.dst.startswith('10.0.1'):
             eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:01", ethertype=eth.ethertype)
@@ -189,7 +200,7 @@ class LearningSwitch(app_manager.RyuApp):
             out_port = 1
         elif ip_pkt.dst.startswith('10.0.2'):
             eth_pkt = ethernet.ethernet(dst=dst_mac, src="00:00:00:00:01:02", ethertype=eth.ethertype)
-            out_port = 2  # Assuming port 2 connects to 192.168.2.0/24 network
+            out_port = 2 
             src_mac = "00:00:00:00:01:02"
         else:
             self.logger.info("External Network")
@@ -216,3 +227,10 @@ class LearningSwitch(app_manager.RyuApp):
             datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
             actions=actions, data=pkt.data)
         datapath.send_msg(out)
+
+    def get_out_port(self, dst_ip):
+        if dst_ip.startswith('10.0.1')
+            return 1
+        else if dst_ip.startswith('10.0.2')
+            return 2
+        return 3
