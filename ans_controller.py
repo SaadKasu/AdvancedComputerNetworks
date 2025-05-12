@@ -191,7 +191,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
-        out_port = self.get_out_port(ip_pkt.dst_ip)
+        out_port = self.get_out_port(ip_pkt.dst)
         dst_mac=self.port_to_own_mac[out_port]
 
         if ip_pkt.dst.startswith('10.0.1'):
