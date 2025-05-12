@@ -231,6 +231,6 @@ class LearningSwitch(app_manager.RyuApp):
     def get_out_port(self, dst_ip):
         if dst_ip.startswith('10.0.1'):
             return 1
-        else if dst_ip.startswith('10.0.2'):
+        elif dst_ip.startswith('10.0.2'):
             return 2
         return 3
