@@ -35,7 +35,7 @@ class NetworkTopo(Topo):
 
         Topo.__init__(self)
 
-        # Build the specified network topology here
+         # Build the specified network topology here
         h1 = self.addHost('h1', ip = '10.0.1.10/24', defaultRoute='via 10.0.1.1')
         h2 = self.addHost('h2', ip = '10.0.1.11/24', defaultRoute='via 10.0.1.1')
         ser = self.addHost('ser', ip = '10.0.2.10/24', defaultRoute='via 10.0.2.1')
@@ -64,10 +64,6 @@ def run():
         ip="127.0.0.1", 
         port=6653)
     net.start()
-    r = net.get('s3')
-    r.cmd('ifconfig s3-eth0 10.0.1.1/24')
-    r.cmd('ifconfig s3-eth1 10.0.2.1/24')
-    r.cmd('ifconfig s3-eth2 192.168.1.1/24')
     CLI(net)
     net.stop()
 
