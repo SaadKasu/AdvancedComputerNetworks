@@ -28,47 +28,41 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel
 
+
 class NetworkTopo(Topo):
 
-    def build(self):  # ⬅ use build() instead of __init__ for modern Topo subclasses
-        # Hosts
-        h1 = self.addHost('h1', ip='10.0.1.2/24', defaultRoute='via 10.0.1.1')
-        h2 = self.addHost('h2', ip='10.0.1.3/24', defaultRoute='via 10.0.1.1')
-        ser = self.addHost('ser', ip='10.0.2.2/24', defaultRoute='via 10.0.2.1')
-        ext = self.addHost('ext', ip='192.168.1.123/24', defaultRoute='via 192.168.1.1')
+    def __init__(self):
 
-        # Switches
-        s1 = self.addSwitch('s1', cls=OVSKernelSwitch)
-        s2 = self.addSwitch('s2', cls=OVSKernelSwitch)
-        s3 = self.addSwitch('s3', cls=OVSKernelSwitch, dpid='0000000000000003')  # OF 1.3 needs 16-digit hex
+        Topo.__init__(self)
 
-        # Links
-        self.addLink(h1, s1, bw=15, delay='10ms', cls=TCLink)
-        self.addLink(h2, s1, bw=15, delay='10ms', cls=TCLink)
+        # Build the specified network topology here
+        h1 = self.addHost('h1', ip = '10.0.1.2/24', defaultRoute='via 10.0.1.1')
+        h2 = self.addHost('h2', ip = '10.0.1.3/24', defaultRoute='via 10.0.1.1')
+        ser = self.addHost('ser', ip = '10.0.2.2/24', defaultRoute='via 10.0.2.1')
+        ext = self.addHost('ext', ip = '192.168.1.123/24', defaultRoute='via 192.168.1.1')
 
-        # Connect s3 to s1 with MAC on s3 side
-        self.addLink(s3, s1, bw=15, delay='10ms', cls=TCLink,
-                     intfName='s3-eth1', params={'mac': '00:00:00:00:01:01'})
+        s1 = self.addSwitch('s1', cls = OVSKernelSwitch)
+        s2 = self.addSwitch('s2', cls = OVSKernelSwitch)
+        s3 = self.addSwitch('s3', cls = OVSKernelSwitch, dpid='3')
 
-        self.addLink(ser, s2, bw=15, delay='10ms', cls=TCLink)
-
-        # Connect s3 to s2 with MAC on s3 side
-        self.addLink(s3, s2, bw=15, delay='10ms', cls=TCLink,
-                     intfName='s3-eth2', params={'mac': '00:00:00:00:01:02'})
-
-        # Connect s3 to ext host with MAC on s3 side
-        self.addLink(s3, ext, bw=15, delay='10ms', cls=TCLink,
-                     intfName='s3-eth3', params={'mac': '00:00:00:00:01:03'})
+        l1 = self.addLink(h1,s1, bw=15, delay='10ms', cls = TCLink)
+        l2 = self.addLink(h2,s1, bw=15, delay='10ms', cls = TCLink)
+        l3 = self.addLink(s3,s1, bw=15, delay='10ms', cls = TCLink, port1=1)
+        l4 = self.addLink(ser,s2, bw=15, delay='10ms', cls = TCLink)
+        l5 = self.addLink(s3,s2, bw=15, delay='10ms', cls = TCLink, port1=2)
+        l6 = self.addLink(s3,ext, bw=15, delay='10ms', cls = TCLink, port1=3)
 
 def run():
     topo = NetworkTopo()
     net = Mininet(topo=topo,
-                  controller=None,
                   switch=OVSKernelSwitch,
                   link=TCLink,
-                  autoSetMacs=False)
-
-    net.addController('c1', controller=RemoteController, ip="127.0.0.1", port=6653)
+                  controller=None)
+    net.addController(
+        'c1', 
+        controller=RemoteController, 
+        ip="127.0.0.1", 
+        port=6653)
     net.start()
     CLI(net)
     net.stop()
