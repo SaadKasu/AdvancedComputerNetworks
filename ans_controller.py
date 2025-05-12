@@ -57,6 +57,8 @@ class StaticLearningRouter(app_manager.RyuApp):
 
         # Dynamic ARP table: IP → {mac, port}
         self.arp_table = {}
+        
+        self.pending_packets = {}
 
         self.blocked_ip = "192.168.1.2"
 
@@ -132,7 +134,13 @@ class StaticLearningRouter(app_manager.RyuApp):
             dst_entry = self.arp_table.get(dst_ip)
             if not dst_entry:
                 self.logger.info("No ARP entry for %s, sending ARP request on port %d", dst_ip, out_port)
+                
+                # Send ARP request
                 self.send_arp_request(dp, out_port, dst_ip)
+                
+                # Buffer the packet for retry
+                self.logger.info("Buffering packet to %s until ARP reply arrives", dst_ip)
+                self.pending_packets.setdefault(dst_ip, []).append((dp, in_port, msg.data))
                 return
 
             out_iface = self.get_iface_info(out_port)
@@ -173,6 +181,15 @@ class StaticLearningRouter(app_manager.RyuApp):
         # Learn source MAC/IP
         self.logger.info("Learning ARP: %s is at %s (via port %d)", arp_pkt.src_ip, arp_pkt.src_mac, in_port)
         self.arp_table[arp_pkt.src_ip] = {'mac': arp_pkt.src_mac, 'port': in_port}
+        
+        if arp_pkt.src_ip in self.pending_packets:
+            self.logger.info("Sending %d buffered packet(s) to %s", 
+                         len(self.pending_packets[arp_pkt.src_ip]), arp_pkt.src_ip)
+
+            for dp, in_port, data in self.pending_packets[arp_pkt.src_ip]:
+                self.send_buffered_packet(dp, in_port, data, arp_pkt.src_ip)
+        
+            del self.pending_packets[arp_pkt.src_ip]
 
         # Handle ARP request for router interface
         for port, own_ip in self.port_to_own_ip.items():
@@ -239,5 +256,34 @@ class StaticLearningRouter(app_manager.RyuApp):
             in_port=ofproto.OFPP_CONTROLLER,
             actions=[parser.OFPActionOutput(out_port)],
             data=pkt.data
+        )
+        dp.send_msg(out)
+        
+    def send_buffered_packet(self, dp, in_port, data, dst_ip):
+        ofproto = dp.ofproto
+        parser = dp.ofproto_parser
+
+        pkt = packet.Packet(data)
+        eth = pkt.get_protocol(ethernet.ethernet)
+        ip_pkt = pkt.get_protocol(ipv4.ipv4)
+
+        dst_entry = self.arp_table[dst_ip]
+        out_iface = self.get_iface_info(self.get_out_port_for_ip(dst_ip))
+
+        actions = [
+            parser.OFPActionSetField(eth_src=out_iface['mac']),
+            parser.OFPActionSetField(eth_dst=dst_entry['mac']),
+            parser.OFPActionOutput(dst_entry['port'])
+        ]
+
+        self.logger.info("Sending buffered packet from %s to %s via port %d",
+                         ip_pkt.src, ip_pkt.dst, dst_entry['port'])
+
+        out = parser.OFPPacketOut(
+            datapath=dp,
+            buffer_id=ofproto.OFP_NO_BUFFER,
+            in_port=in_port,
+            actions=actions,
+            data=data
         )
         dp.send_msg(out)
