@@ -288,8 +288,6 @@ class LearningSwitch(app_manager.RyuApp):
                     self.logger.info("ICMP Echo Request Received. Sending an ICMP Reply")
                     self.send_icmp_reply(datapath, pkt, ip_pkt, icmp_pkt, in_port)
                     return
-                self.logger.info("ICMP Echo Request Received But Gateway access is not allowed")
-                return
 
             arp_pkt = packet.Packet()
             pkt.add_protocol(ethernet.ethernet(
