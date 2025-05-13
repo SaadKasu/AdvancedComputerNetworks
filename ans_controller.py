@@ -23,7 +23,7 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
-from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp
+from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp, icmp
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import ether_types
 import ipaddress
@@ -90,6 +90,16 @@ class LearningSwitch(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
 
+        icmp_pkt = pkt.get_protocol(icmp.icmp)
+        ip_pkt = pkt.get_protocol(ipv4.ipv4)
+
+        if ip_pkt and icmp_pkt:
+            # Drop broadcast or unknown-directed ICMP involving ext
+            if '192.168.1.2/24' in [ip_pkt.src, ip_pkt.dst]:
+                if ip_pkt.dst != '192.168.1.2/24' and ip_pkt.src != '192.168.1.2/24':
+                    self.logger.info("Dropping ICMP not specifically targeting ext")
+                    return
+
         dst = eth.dst
         src = eth.src
 
@@ -140,6 +150,11 @@ class LearningSwitch(app_manager.RyuApp):
         arp_pkt = pkt.get_protocol(arp.arp)
                 
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+
+        if arp_pkt.src_ip == '192.168.1.2/24' or arp_pkt.dst_ip == '192.168.1.2/24':
+            if not (arp_pkt.dst_ip == self.ext_ip):
+                self.logger.info("Blocking unsolicited ARP involving ext host")
+                return
 
         if arp_pkt.opcode == arp.ARP_REQUEST and arp_pkt.dst_ip == self.port_to_own_ip[in_port]:
             self.send_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
@@ -272,20 +287,6 @@ class LearningSwitch(app_manager.RyuApp):
         dst_ip = ip_pkt.dst
 
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
-
-        tcp_pkt = pkt.get_protocol(tcp.tcp)
-        udp_pkt = pkt.get_protocol(udp.udp)
-
-        # Define subnets
-        ext_subnet = ipaddress.ip_network('192.168.1.0/24')
-        server_subnet = ipaddress.ip_network('10.0.2.0/24')
-
-        if (tcp_pkt or udp_pkt) and (
-            (ipaddress.ip_address(src_ip) in ext_subnet and ipaddress.ip_address(dst_ip) in server_subnet) or
-            (ipaddress.ip_address(dst_ip) in ext_subnet and ipaddress.ip_address(src_ip) in server_subnet)
-        ):
-            self.logger.info("Dropping UDP and TCP packets between ext and server")
-            return
 
         dst_entry = self.arp_table.get(dst_ip)
         if not dst_entry:
