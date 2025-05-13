@@ -95,8 +95,8 @@ class LearningSwitch(app_manager.RyuApp):
 
         if ip_pkt and icmp_pkt:
             # Drop broadcast or unknown-directed ICMP involving ext
-            if '192.168.1.2/24' in [ip_pkt.src, ip_pkt.dst]:
-                if ip_pkt.dst != '192.168.1.2/24' and ip_pkt.src != '192.168.1.2/24':
+            if '192.168.1.2' in [ip_pkt.src, ip_pkt.dst]:
+                if ip_pkt.dst != '192.168.1.2' and ip_pkt.src != '192.168.1.2':
                     self.logger.info("Dropping ICMP not specifically targeting ext")
                     return
 
@@ -151,7 +151,7 @@ class LearningSwitch(app_manager.RyuApp):
                 
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
-        if arp_pkt.src_ip == '192.168.1.2/24' or arp_pkt.dst_ip == '192.168.1.2/24':
+        if arp_pkt.src_ip == '192.168.1.2' or arp_pkt.dst_ip == '192.168.1.2':
             if not (arp_pkt.dst_ip == self.ext_ip):
                 self.logger.info("Blocking unsolicited ARP involving ext host")
                 return
