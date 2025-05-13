@@ -290,7 +290,7 @@ class LearningSwitch(app_manager.RyuApp):
             ))
             
 
-            self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
+            self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt.data)
             return
         
         eth_pkt = ethernet.ethernet(dst=dst_entry['mac'], src=self.port_to_own_mac[dst_entry['port']], ethertype=eth.ethertype)
