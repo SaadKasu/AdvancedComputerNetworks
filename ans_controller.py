@@ -400,7 +400,6 @@ class LearningSwitch(app_manager.RyuApp):
 
         for entry in self.routing_table:
             if dst_ip in entry['network']:
-                # LPM: choose the most specific prefix
                 if longest_prefix is None or entry['network'].prefixlen > longest_prefix.prefixlen:
                     longest_prefix = entry['network']
                     selected_port = entry['port']
