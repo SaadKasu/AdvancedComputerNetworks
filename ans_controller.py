@@ -95,19 +95,10 @@ class LearningSwitch(app_manager.RyuApp):
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-        icmp_pkt = pkt.get_protocol(icmp.icmp)
 
         dst = eth.dst
         src = eth.src
 
-        if ip_pkt and icmp_pkt:
-            
-            src_ip = ip_pkt.src
-            dst_ip = ip_pkt.dst
-            if src_ip in self.allowed_gateway and dst_ip != self.allowed_gateway[src_ip]:
-                self.logger.info("Dropping ping from %s to unauthorized gateway %s ICMP:%s IP Protocol : %s Ether Type : %s", src_ip, dst_ip, icmp_pkt, ip_pkt.proto, eth.ethertype)
-                return
 
         dpid = datapath.id
         
@@ -285,6 +276,10 @@ class LearningSwitch(app_manager.RyuApp):
 
         src_ip = ip_pkt.src
         dst_ip = ip_pkt.dst
+
+        if src_ip =='192.168.1.2' or dst_ip =='192.168.1.2' : 
+            self.logger.info("Dropping Packets For External Host")
+            return
 
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
 
