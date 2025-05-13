@@ -106,7 +106,7 @@ class LearningSwitch(app_manager.RyuApp):
             src_ip = ip_pkt.src
             dst_ip = ip_pkt.dst
             if src_ip in self.allowed_gateway and dst_ip != self.allowed_gateway[src_ip]:
-                self.logger.info("Dropping ping from %s to unauthorized gateway %s ICMP:%s IP Protocol : %s", src_ip, dst_ip, icmp_pkt, ip_pkt.proto)
+                self.logger.info("Dropping ping from %s to unauthorized gateway %s ICMP:%s IP Protocol : %s Ether Type : %s", src_ip, dst_ip, icmp_pkt, ip_pkt.proto, eth.ethertype)
                 return
 
         dpid = datapath.id
