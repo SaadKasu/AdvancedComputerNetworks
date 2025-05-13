@@ -288,9 +288,9 @@ class LearningSwitch(app_manager.RyuApp):
                 dst_mac='00:00:00:00:00:00',
                 dst_ip=dst_ip
             ))
-            arp_pkt.serialize()
+            
 
-            self.send_arp_request(datapath, pkt, in_port, eth, pkt.get_protocol(arp_pkt))
+            self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
             return
         
         eth_pkt = ethernet.ethernet(dst=dst_entry['mac'], src=self.port_to_own_mac[dst_entry['port']], ethertype=eth.ethertype)
