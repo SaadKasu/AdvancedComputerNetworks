@@ -53,10 +53,10 @@ class LearningSwitch(app_manager.RyuApp):
         self.pending_packets = {}
         self.arp_table = {}
         self.allowed_gateway = {
-        '10.0.1.10': '10.0.1.1',
-        '10.0.1.11': '10.0.1.1',
-        '10.0.2.10': '10.0.2.1',
-        '192.168.1.2': '192.168.1.1'
+        '10.0.1.2': '10.0.1.1',
+        '10.0.1.3': '10.0.1.1',
+        '10.0.2.2': '10.0.2.1',
+        '192.168.1.123': '192.168.1.1'
         }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -306,10 +306,10 @@ class LearningSwitch(app_manager.RyuApp):
     
         self.logger.info("IP Packet Info scr ip : %s dst_ip : %s Ip Proto : %s",src_ip, dst_ip, ip_pkt.proto)
 
-        if (src_ip =='192.168.1.2' or dst_ip =='192.168.1.2') and ip_pkt.proto == 1: 
+        if (src_ip =='192.168.1.123' or dst_ip =='192.168.1.123') and ip_pkt.proto == 1: 
             self.logger.info("Dropping ICMP Packets For External Host")
             return
-        elif (ip_pkt.proto == 6 or ip_pkt.proto == 17) and ((src_ip == '192.168.1.2' and dst_ip == '10.0.2.10') or (dst_ip == '192.168.1.2' and src_ip == '10.0.2.10')):
+        elif (ip_pkt.proto == 6 or ip_pkt.proto == 17) and ((src_ip == '192.168.1.123' and dst_ip == '10.0.2.2') or (dst_ip == '192.168.1.123' and src_ip == '10.0.2.2')):
             self.logger.info("Dropping TCP and UDP Packets Between External Host and Server")
             return 
         
