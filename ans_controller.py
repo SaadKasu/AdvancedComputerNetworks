@@ -98,13 +98,13 @@ class LearningSwitch(app_manager.RyuApp):
         ip_pkt = pkt.get_protocol(ipv4.ipv4)
         icmp_pkt = pkt.get_protocol(icmp.icmp)
 
+        dst = eth.dst
+        src = eth.src
+
         if ip_pkt and icmp_pkt:
             if src_ip in allowed_gateway and dst_ip != allowed_gateway[src_ip]:
                 self.logger.info("Dropping ping from %s to unauthorized gateway %s", src_ip, dst_ip)
                 return
-
-        dst = eth.dst
-        src = eth.src
 
         dpid = datapath.id
         
