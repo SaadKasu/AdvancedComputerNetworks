@@ -152,7 +152,7 @@ class LearningSwitch(app_manager.RyuApp):
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         if arp_pkt.src_ip == '192.168.1.2' or arp_pkt.dst_ip == '192.168.1.2':
-            if not (arp_pkt.dst_ip == self.ext_ip):
+            if not (arp_pkt.dst_ip == '192.168.1.2'):
                 self.logger.info("Blocking unsolicited ARP involving ext host")
                 return
 
