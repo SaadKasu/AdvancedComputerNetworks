@@ -281,7 +281,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         dst_entry = self.arp_table.get(dst_ip)
         if not dst_entry:
-            self.logger.info("No ARP entry for %s, sending ARP request on port %d", dst_ip, in_port, icmp_pkt)
+            self.logger.info("No ARP entry for %s, sending ARP request on port %d", dst_ip, in_port)
 
             icmp_pkt = pkt.get_protocol(icmp.icmp)
             if icmp_pkt:
