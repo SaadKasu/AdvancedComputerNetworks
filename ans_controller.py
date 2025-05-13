@@ -141,10 +141,6 @@ class LearningSwitch(app_manager.RyuApp):
                 
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
-        if not (arp_pkt.src_ip == '192.168.1.2' and arp_pkt.dst_ip == '192.168.1.1') or arp_pkt.dst_ip == '192.168.1.2':
-            self.logger.info("Blocking unsolicited ARP involving ext host")
-            return
-
         if arp_pkt.opcode == arp.ARP_REQUEST and arp_pkt.dst_ip == self.port_to_own_ip[in_port]:
             self.send_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
         elif arp_pkt.opcode == arp.ARP_REQUEST: 
@@ -261,7 +257,6 @@ class LearningSwitch(app_manager.RyuApp):
                                           actions=actions, data=arp_reply.data,
                                           buffer_id=ofproto.OFP_NO_BUFFER)
                 datapath.send_msg(out)
-            del self.pending_packets[arp_pkt.src_ip]
 
     def handle_ip(self, datapath, pkt, in_port, eth):
         
