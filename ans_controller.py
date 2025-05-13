@@ -109,6 +109,8 @@ class LearningSwitch(app_manager.RyuApp):
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
+    
+        self.logger.info("Map Mac to PORT - %s",self.mac_to_port)
 
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
@@ -216,6 +218,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
+
         actions = [parser.OFPActionOutput(out_port)]
         out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
                                   actions=actions, data=pkt.data,
