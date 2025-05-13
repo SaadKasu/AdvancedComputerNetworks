@@ -284,8 +284,12 @@ class LearningSwitch(app_manager.RyuApp):
             self.logger.info("No ARP entry for %s, sending ARP request on port %d", dst_ip, in_port)
 
             icmp_pkt = pkt.get_protocol(icmp.icmp)
-            if icmp_pkt:
-                self.logger.info("ICMP packet type :%s", icmp_pkt.type)
+            if icmp_pkt and icmp_pkt.type == icmp.ICMP_ECHO_REQUEST:
+                if src_ip in self.allowed_gateway and self.allowed_gateway[src_ip] == dst_ip:
+                    self.logger.info("ICMP Echo Request Received. Sending an ICMP Reply", icmp_pkt.type)
+                    self.send_icmp_reply(datapath, pkt, ip_pkt, icmp_pkt, in_port)
+                    return
+                self.logger.info("ICMP Echo Request Received But Gateway access is not allowed")
 
             arp_pkt = packet.Packet()
             pkt.add_protocol(ethernet.ethernet(
@@ -342,6 +346,45 @@ class LearningSwitch(app_manager.RyuApp):
         out = parser.OFPPacketOut(
             datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
             actions=actions, data=pkt.data)
+        datapath.send_msg(out)
+
+
+    def send_icmp_reply(self, datapath, pkt, ip_pkt, icmp_pkt, in_port):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        eth_pkt = pkt.get_protocol(ethernet.ethernet)
+        eth = ethernet.ethernet(dst=eth_pkt.src,
+                            src=eth_self.port_to_own_mac[in_port],
+                            ethertype=ether.ETH_TYPE_IP)
+        ip = ipv4.ipv4(dst=ip_pkt.src,
+                   src=ip_pkt.dst,
+                   proto=ip_pkt.proto)
+
+        
+        icmp_reply = icmp.icmp(
+            type_=icmp.ICMP_ECHO_REPLY,
+            code=0,
+            csum=0,
+            data=icmp_pkt.data
+        )
+
+        reply_pkt = packet.Packet()
+        reply_pkt.add_protocol(eth)
+        reply_pkt.add_protocol(ip)
+        reply_pkt.add_protocol(icmp_reply)
+        reply_pkt.serialize()
+
+        actions = [parser.OFPActionOutput(in_port)]
+
+        out = parser.OFPPacketOut(
+            datapath=datapath,
+            buffer_id=ofproto.OFP_NO_BUFFER,
+            in_port=ofproto.OFPP_CONTROLLER,
+            actions=actions,
+            data=reply_pkt.data
+        )
+
         datapath.send_msg(out)
 
 
