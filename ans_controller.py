@@ -26,6 +26,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp, icmp
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import ether_types
+import ipaddress
 
 
 class LearningSwitch(app_manager.RyuApp):
@@ -57,6 +58,12 @@ class LearningSwitch(app_manager.RyuApp):
         '10.0.2.2': '10.0.2.1',
         '192.168.1.123': '192.168.1.1'
         }
+
+        self.routing_table = [
+            {'network': ipaddress.IPv4Network('10.0.1.0/24'), 'port': 1},
+            {'network': ipaddress.IPv4Network('10.0.2.0/24'), 'port': 2},
+            {'network': ipaddress.IPv4Network('192.168.1.0/24'), 'port': 3},
+        ]
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -289,6 +296,7 @@ class LearningSwitch(app_manager.RyuApp):
                     self.send_icmp_reply(datapath, pkt, ip_pkt, icmp_pkt, in_port)
                     return
                 self.logger.info("ICMP Echo Request Received But Gateway access is not allowed")
+                return
 
             arp_pkt = packet.Packet()
             pkt.add_protocol(ethernet.ethernet(
@@ -387,9 +395,16 @@ class LearningSwitch(app_manager.RyuApp):
         datapath.send_msg(out)
 
 
-    def get_out_port(self, dst_ip):
-        if dst_ip.startswith('10.0.1'):
-            return 1
-        elif dst_ip.startswith('10.0.2'):
-            return 2
-        return 3
+    def get_out_port(self, dst_ip_str):
+    dst_ip = ipaddress.IPv4Address(dst_ip_str)
+    longest_prefix = None
+    selected_port = None
+
+    for entry in self.routing_table:
+        if dst_ip in entry['network']:
+            # LPM: choose the most specific prefix
+            if longest_prefix is None or entry['network'].prefixlen > longest_prefix.prefixlen:
+                longest_prefix = entry['network']
+                selected_port = entry['port']
+
+    return selected_port
