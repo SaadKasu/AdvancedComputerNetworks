@@ -25,8 +25,7 @@ from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp, icmp
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import ether_types
-import ipaddress
+from ryu.lib.packet import ether, ether_types
 
 
 class LearningSwitch(app_manager.RyuApp):
