@@ -90,16 +90,6 @@ class LearningSwitch(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
 
-        icmp_pkt = pkt.get_protocol(icmp.icmp)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-
-        if ip_pkt and icmp_pkt:
-            # Drop broadcast or unknown-directed ICMP involving ext
-            if '192.168.1.2' in [ip_pkt.src, ip_pkt.dst]:
-                if ip_pkt.dst != '192.168.1.2' and ip_pkt.src != '192.168.1.2':
-                    self.logger.info("Dropping ICMP not specifically targeting ext")
-                    return
-
         dst = eth.dst
         src = eth.src
 
@@ -151,10 +141,9 @@ class LearningSwitch(app_manager.RyuApp):
                 
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
-        if arp_pkt.src_ip == '192.168.1.2' or arp_pkt.dst_ip == '192.168.1.2':
-            if not (arp_pkt.dst_ip == '192.168.1.2'):
-                self.logger.info("Blocking unsolicited ARP involving ext host")
-                return
+        if (arp_pkt.src_ip == '192.168.1.2' and arp_pkt.dst_ip != '192.168.1.1') and arp_pkt.dst_ip == '192.168.1.2':
+            self.logger.info("Blocking unsolicited ARP involving ext host")
+            return
 
         if arp_pkt.opcode == arp.ARP_REQUEST and arp_pkt.dst_ip == self.port_to_own_ip[in_port]:
             self.send_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
