@@ -396,15 +396,15 @@ class LearningSwitch(app_manager.RyuApp):
 
 
     def get_out_port(self, dst_ip_str):
-    dst_ip = ipaddress.IPv4Address(dst_ip_str)
-    longest_prefix = None
-    selected_port = None
+        dst_ip = ipaddress.IPv4Address(dst_ip_str)
+        longest_prefix = None
+        selected_port = None
 
-    for entry in self.routing_table:
-        if dst_ip in entry['network']:
-            # LPM: choose the most specific prefix
-            if longest_prefix is None or entry['network'].prefixlen > longest_prefix.prefixlen:
-                longest_prefix = entry['network']
-                selected_port = entry['port']
+        for entry in self.routing_table:
+            if dst_ip in entry['network']:
+                # LPM: choose the most specific prefix
+                if longest_prefix is None or entry['network'].prefixlen > longest_prefix.prefixlen:
+                    longest_prefix = entry['network']
+                    selected_port = entry['port']
 
-    return selected_port
+        return selected_port
