@@ -277,10 +277,6 @@ class LearningSwitch(app_manager.RyuApp):
         src_ip = ip_pkt.src
         dst_ip = ip_pkt.dst
 
-        if src_ip =='192.168.1.2' or dst_ip =='192.168.1.2' : 
-            self.logger.info("Dropping Packets For External Host")
-            return
-
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
 
         dst_entry = self.arp_table.get(dst_ip)
@@ -303,6 +299,10 @@ class LearningSwitch(app_manager.RyuApp):
             arp_pkt.serialize()
 
             self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt.get_protocol(arp.arp))
+            return
+
+        if src_ip =='192.168.1.2' or dst_ip =='192.168.1.2' : 
+            self.logger.info("Dropping Packets For External Host")
             return
         
         eth_pkt = ethernet.ethernet(dst=dst_entry['mac'], src=self.port_to_own_mac[dst_entry['port']], ethertype=eth.ethertype)
