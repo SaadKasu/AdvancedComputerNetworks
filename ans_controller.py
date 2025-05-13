@@ -25,7 +25,7 @@ from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp, icmp
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import ether, ether_types
+from ryu.lib.packet import ether_types
 
 
 class LearningSwitch(app_manager.RyuApp):
@@ -355,7 +355,7 @@ class LearningSwitch(app_manager.RyuApp):
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
         eth = ethernet.ethernet(dst=eth_pkt.src,
                             src=self.port_to_own_mac[in_port],
-                            ethertype=ether.ETH_TYPE_IP)
+                            ethertype=ether_types.ETH_TYPE_IP)
         ip = ipv4.ipv4(dst=ip_pkt.src,
                    src=ip_pkt.dst,
                    proto=ip_pkt.proto)
