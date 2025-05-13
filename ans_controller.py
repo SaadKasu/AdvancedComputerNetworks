@@ -153,8 +153,6 @@ class LearningSwitch(app_manager.RyuApp):
         self.logger.info("Inside The ARP if condition, Learn The Mac Of The Router")
 
         self.arp_table[arp_pkt.src_ip] = {'mac': eth.src, 'port': in_port}
-
-        self.logger.info("ARP Table : %s", self.arp_table)
         
         src_mac = self.port_to_own_mac[in_port]
         src_ip = self.port_to_own_ip[in_port]
@@ -273,6 +271,10 @@ class LearningSwitch(app_manager.RyuApp):
         dst_ip = ip_pkt.dst
 
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
+
+        if (pkt.get_protocol(tcp.tcp) or pkt.get_protocol(udp.udp)) and ((src_ip == '192.168.1.2/24' and dst_ip == '10.0.2.10/24') or (dst_ip == '192.168.1.2/24' and scr_ip == '10.0.2.10/24'))
+            self.logger.info("Dropping UDP and TCP Packets between ext and server")
+            return
 
         dst_entry = self.arp_table.get(dst_ip)
         if not dst_entry:
