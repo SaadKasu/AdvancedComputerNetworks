@@ -304,9 +304,12 @@ class LearningSwitch(app_manager.RyuApp):
         tcp_pkt = pkt.get_protocol(tcp.tcp)
         udp_pkt = pkt.get_protocol(udp.udp)
 
-        if (src_ip =='192.168.1.2' or dst_ip =='192.168.1.2') and ip_pkt.proto != 6 and ip_pkt.proto != 17 : 
-            self.logger.info("Dropping Packets For External Host")
+        if src_ip =='192.168.1.2' or dst_ip =='192.168.1.2' and ip_pkt.proto == 1: 
+            self.logger.info("Dropping ICMP Packets For External Host")
             return
+        elif (ip_pkt.proto == 6 or ip_pkt.proto == 17) and ((src_ip == '192.168.1.2' and dst_ip == '10.0.2.10') or (dst_ip == '192.168.1.2' and src_ip == '10.0.2.10'))
+            self.logger.info("Dropping TCP and UDP Packets Between External Host and Server"):
+            return 
         
         eth_pkt = ethernet.ethernet(dst=dst_entry['mac'], src=self.port_to_own_mac[dst_entry['port']], ethertype=eth.ethertype)
 
