@@ -275,7 +275,21 @@ class LearningSwitch(app_manager.RyuApp):
         if not dst_entry:
             self.logger.info("No ARP entry for %s, sending ARP request on port %d", dst_ip, in_port)
 
-            self.send_arp_request(datapath, pkt, in_port, eth, pkt.get_protocol(arp.arp))
+            arp_pkt = packet.Packet()
+            pkt.add_protocol(ethernet.ethernet(
+                ethertype=ether_types.ETH_TYPE_ARP,
+                dst=dst,
+                src=src_mac
+            ))
+            arp_pkt.add_protocol(arp.arp(
+                opcode=arp.ARP_REQUEST,
+                src_mac=src_mac,
+                src_ip=src_ip,
+                dst_mac=dst,
+                dst_ip=dst_ip
+            ))
+
+            self.send_arp_request(datapath, pkt, in_port, eth, pkt.get_protocol(arp_pkt))
             return
         
         eth_pkt = ethernet.ethernet(dst=dst_entry['mac'], src=self.port_to_own_mac[dst_entry['port']], ethertype=eth.ethertype)
