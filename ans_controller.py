@@ -272,7 +272,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
 
-        if (pkt.get_protocol(tcp.tcp) or pkt.get_protocol(udp.udp)) and ((src_ip == '192.168.1.2/24' and dst_ip == '10.0.2.10/24') or (dst_ip == '192.168.1.2/24' and scr_ip == '10.0.2.10/24'))
+        if (pkt.get_protocol(tcp.tcp) or pkt.get_protocol(udp.udp)) and ((src_ip == '192.168.1.2/24' and dst_ip == '10.0.2.10/24') or (dst_ip == '192.168.1.2/24' and src_ip == '10.0.2.10/24')):
             self.logger.info("Dropping UDP and TCP Packets between ext and server")
             return
 
