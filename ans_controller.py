@@ -52,6 +52,12 @@ class LearningSwitch(app_manager.RyuApp):
         
         self.pending_packets = {}
         self.arp_table = {}
+        self.allowed_gateway = {
+        '10.0.1.10': '10.0.1.1',
+        '10.0.1.11': '10.0.1.1',
+        '10.0.2.10': '10.0.2.1',
+        '192.168.1.2': '192.168.1.1'
+        }
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -89,6 +95,13 @@ class LearningSwitch(app_manager.RyuApp):
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
+        ip_pkt = pkt.get_protocol(ipv4.ipv4)
+        icmp_pkt = pkt.get_protocol(icmp.icmp)
+
+        if ip_pkt and icmp_pkt:
+            if src_ip in allowed_gateway and dst_ip != allowed_gateway[src_ip]:
+                self.logger.info("Dropping ping from %s to unauthorized gateway %s", src_ip, dst_ip)
+                return
 
         dst = eth.dst
         src = eth.src
@@ -234,7 +247,7 @@ class LearningSwitch(app_manager.RyuApp):
         if src_ip in self.pending_packets:
             self.logger.info("Found a packet with source ip : %s",src_ip)
             for out_port, dst, dst_ip in self.pending_packets[src_ip]:
-                self.logger.info("Generating a ARP Reply for request from : Port : %s IP : %s MAC : %s",out_port, dst_ip, dst_ip)
+                self.logger.info("Generating a ARP Reply for request from : Port : %s IP : %s MAC : %s",out_port, dst_ip, dst)
                 arp_reply = packet.Packet()
                 arp_reply.add_protocol(ethernet.ethernet(
                     ethertype = eth.ethertype,
