@@ -187,7 +187,7 @@ class LearningSwitch(app_manager.RyuApp):
 
     def send_arp_request(self, datapath, pkt, in_port, eth, arp_pkt):
 
-        self.logger.info("Inside The ARP else if condition, Learn The Mac Of the Host, Broadcasting the message and adding it to the buffer")
+        self.logger.info("Inside The ARP else if condition, Learn The Mac Of the Host, Broadcasting the message and adding it to the buffer In Port:%s DST_IP : %s SRC_IP : %s",in_port, arp_pkt.dst_ip, arp_pkt.src_ip)
 
         out_port = self.get_out_port(arp_pkt.dst_ip)
 
@@ -216,7 +216,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         parser = datapath.ofproto_parser
         ofproto = datapath.ofproto
-        actions = [parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        actions = [parser.OFPActionOutput(out_port)]
         out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
                                   actions=actions, data=pkt.data,
                                   buffer_id=ofproto.OFP_NO_BUFFER)
