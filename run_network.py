@@ -62,7 +62,7 @@ def run():
         'c1', 
         controller=RemoteController, 
         ip="127.0.0.1", 
-        port=6633)
+        port=6653)
     net.start()
     CLI(net)
     net.stop()
