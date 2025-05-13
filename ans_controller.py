@@ -26,6 +26,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet, ethernet, arp, ipv4, tcp, udp
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import ether_types
+import ipaddress
 
 
 class LearningSwitch(app_manager.RyuApp):
@@ -272,8 +273,18 @@ class LearningSwitch(app_manager.RyuApp):
 
         self.arp_table[src_ip] = {'mac': eth.src, 'port': in_port}
 
-        if (pkt.get_protocol(tcp.tcp) or pkt.get_protocol(udp.udp)) and ((src_ip == '192.168.1.2/24' and dst_ip == '10.0.2.10/24') or (dst_ip == '192.168.1.2/24' and src_ip == '10.0.2.10/24')):
-            self.logger.info("Dropping UDP and TCP Packets between ext and server")
+        tcp_pkt = pkt.get_protocol(tcp.tcp)
+        udp_pkt = pkt.get_protocol(udp.udp)
+
+        # Define subnets
+        ext_subnet = ipaddress.ip_network('192.168.1.0/24')
+        server_subnet = ipaddress.ip_network('10.0.2.0/24')
+
+        if (tcp_pkt or udp_pkt) and (
+            (ipaddress.ip_address(src_ip) in ext_subnet and ipaddress.ip_address(dst_ip) in server_subnet) or
+            (ipaddress.ip_address(dst_ip) in ext_subnet and ipaddress.ip_address(src_ip) in server_subnet)
+        ):
+            self.logger.info("Dropping UDP and TCP packets between ext and server")
             return
 
         dst_entry = self.arp_table.get(dst_ip)
