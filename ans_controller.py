@@ -301,7 +301,10 @@ class LearningSwitch(app_manager.RyuApp):
             self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt.get_protocol(arp.arp))
             return
 
-        if src_ip =='192.168.1.2' or dst_ip =='192.168.1.2' : 
+        tcp_pkt = pkt.get_protocol(tcp.tcp)
+        udp_pkt = pkt.get_protocol(udp.udp)
+
+        if (src_ip =='192.168.1.2' or dst_ip =='192.168.1.2') and ip_pkt.proto != 6 and ip_pkt.proto != 17 : 
             self.logger.info("Dropping Packets For External Host")
             return
         
