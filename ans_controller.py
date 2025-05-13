@@ -286,7 +286,7 @@ class LearningSwitch(app_manager.RyuApp):
             icmp_pkt = pkt.get_protocol(icmp.icmp)
             if icmp_pkt and icmp_pkt.type == icmp.ICMP_ECHO_REQUEST:
                 if src_ip in self.allowed_gateway and self.allowed_gateway[src_ip] == dst_ip:
-                    self.logger.info("ICMP Echo Request Received. Sending an ICMP Reply", icmp_pkt.type)
+                    self.logger.info("ICMP Echo Request Received. Sending an ICMP Reply")
                     self.send_icmp_reply(datapath, pkt, ip_pkt, icmp_pkt, in_port)
                     return
                 self.logger.info("ICMP Echo Request Received But Gateway access is not allowed")
@@ -355,7 +355,7 @@ class LearningSwitch(app_manager.RyuApp):
 
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
         eth = ethernet.ethernet(dst=eth_pkt.src,
-                            src=eth_self.port_to_own_mac[in_port],
+                            src=self.port_to_own_mac[in_port],
                             ethertype=ether.ETH_TYPE_IP)
         ip = ipv4.ipv4(dst=ip_pkt.src,
                    src=ip_pkt.dst,
