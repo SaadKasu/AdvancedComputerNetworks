@@ -92,7 +92,7 @@ class Fattree:
         for switch_number in range(half_switches_in_pod):
             currNode = Node("edge-"+str(switch_number), "switch")
             switches.add(currNode)
-            count_edge_switches++
+            count_edge_switches+=1
             for aggr_switch_number in range(count, count + num_ports/2):
                 currNode.add_edge(switches[aggr_switch_number])
             if count_edge_switches >= num_ports/2:
@@ -105,11 +105,11 @@ class Fattree:
         for server_number in range(number_hosts):
             currNode = Node("host-"+str(server_number), "host")
             servers.add(currNode)
-            hosts_in_switch++
+            hosts_in_switch+=1
             currNode.add_edge(switches[count])
             if hosts_in_switch >= num_ports/2:
                 hosts_in_switch = 0
-                count++
+                count+=1
 		
         # Checking the Degree of each switch in the topology.
         info ('Printing degree of each switch in topology')
