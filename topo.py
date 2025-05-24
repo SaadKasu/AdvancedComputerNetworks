@@ -19,8 +19,6 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  """
 
-fatTree = Fattree(4)
-
 # Class for an edge in the graph
 class Edge:
 	def __init__(self):
@@ -123,3 +121,6 @@ class Fattree:
         info ('Printing degree of each server in topology')
         for node in servers:
             info('*** Degree of Server ',node.id, ' is - ', len(node.edges), '\n')
+
+
+fatTree = Fattree(4)
