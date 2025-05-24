@@ -101,7 +101,7 @@ class Fattree:
 
         # Host Creation 
         count = number_core_switches + half_switches_in_pod
-        hosts_in_server = 0
+        hosts_in_switch = 0
         for server_number in range(number_hosts):
             currNode = Node("host-"+str(server_number), "host")
             self.servers.append(currNode)
