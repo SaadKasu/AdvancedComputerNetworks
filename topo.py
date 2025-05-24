@@ -19,6 +19,8 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  """
 
+fatTree = Fattree(4)
+
 # Class for an edge in the graph
 class Edge:
 	def __init__(self):
