@@ -126,4 +126,4 @@ class Fattree:
         for node in self.servers:
             print('*** Degree of Server ',node.id, ' is - ', len(node.edges), '\n')
 
-fatTree = Fattree(4)
+fatTree = Fattree(6)
