@@ -67,10 +67,10 @@ class Fattree:
         self.generate(num_ports)
 
     def generate(self, num_ports):
-        half_ports = num_ports/2
-        number_core_switches = half_ports**2
-        half_switches_in_pod = (num_ports**2)/2
-        number_hosts = (num_ports**3)/4
+        half_ports = int(num_ports/2)
+        number_core_switches = int(half_ports**2)
+        half_switches_in_pod = int((num_ports**2)/2)
+        number_hosts = int((num_ports**3)/4)
         # Core Layer Switch Creation
         for switch_number in range(number_core_switches):
             currNode = Node("core-"+str(switch_number), "switch")
@@ -80,9 +80,9 @@ class Fattree:
         for switch_number in range(half_switches_in_pod):
             currNode = Node("aggregation-"+str(switch_number), "switch")
             switches.add(currNode)
-            for core_switch_number in range(count, count + num_ports/2):
+            for core_switch_number in range(count, count + half_ports):
                 currNode.add_edge(switches[core_switch_number])
-            count += num_ports/2
+            count += half_ports
             if count >=number_core_switches :
                 count = 0
 
@@ -93,11 +93,11 @@ class Fattree:
             currNode = Node("edge-"+str(switch_number), "switch")
             switches.add(currNode)
             count_edge_switches+=1
-            for aggr_switch_number in range(count, count + num_ports/2):
+            for aggr_switch_number in range(count, count + half_ports):
                 currNode.add_edge(switches[aggr_switch_number])
-            if count_edge_switches >= num_ports/2:
+            if count_edge_switches >= half_ports:
                 count_edge_switches = 0
-                count += num_ports/2
+                count += half_ports
 
         # Host Creation 
         count = number_core_switches + half_switches_in_pod
@@ -107,7 +107,7 @@ class Fattree:
             servers.add(currNode)
             hosts_in_switch+=1
             currNode.add_edge(switches[count])
-            if hosts_in_switch >= num_ports/2:
+            if hosts_in_switch >= half_ports:
                 hosts_in_switch = 0
                 count+=1
 		
