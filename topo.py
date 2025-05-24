@@ -74,12 +74,12 @@ class Fattree:
         # Core Layer Switch Creation
         for switch_number in range(number_core_switches):
             currNode = Node("core-"+str(switch_number), "switch")
-            self.switches.add(currNode)
+            self.switches.append(currNode)
         # Aggregation Layer Switch Creation
         count = 0 
         for switch_number in range(half_switches_in_pod):
             currNode = Node("aggregation-"+str(switch_number), "switch")
-            self.switches.add(currNode)
+            self.switches.append(currNode)
             for core_switch_number in range(count, count + half_ports):
                 currNode.add_edge(self.switches[core_switch_number])
             count += half_ports
@@ -91,7 +91,7 @@ class Fattree:
         count_edge_switches = 0
         for switch_number in range(half_switches_in_pod):
             currNode = Node("edge-"+str(switch_number), "switch")
-            self.switches.add(currNode)
+            self.switches.append(currNode)
             count_edge_switches+=1
             for aggr_switch_number in range(count, count + half_ports):
                 currNode.add_edge(self.switches[aggr_switch_number])
@@ -104,7 +104,7 @@ class Fattree:
         hosts_in_server = 0
         for server_number in range(number_hosts):
             currNode = Node("host-"+str(server_number), "host")
-            self.servers.add(currNode)
+            self.servers.append(currNode)
             hosts_in_switch+=1
             currNode.add_edge(self.switches[count])
             if hosts_in_switch >= half_ports:
