@@ -66,8 +66,8 @@ class Fattree:
 		self.switches = []
 		self.generate(num_ports)
 
-	def generate(self, num_ports):
-        half_ports=num_ports/2
+    def generate(self, num_ports):
+        half_ports = num_ports/2
         number_core_switches = half_ports**2
         half_switches_in_pod = (num_ports**2)/2
         number_hosts = (num_ports**3)/4
