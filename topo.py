@@ -61,7 +61,7 @@ class Node:
 
 class Fattree:
 
-	def __init__(self, num_ports):
+    def __init__(self, num_ports):
 		self.servers = []
 		self.switches = []
 		self.generate(num_ports)
