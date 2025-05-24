@@ -113,11 +113,11 @@ class Fattree:
 		
         # Checking the Degree of each switch in the topology.
         info ('Printing degree of each switch in topology')
-        for node in switches    
+        for node in switches: 
             info('*** Degree of Switch ',node.id, ' is - ', len(node.edges), '\n')
 
 
         # Checking the Degree of each host in the topology.
         info ('Printing degree of each server in topology')
-        for node in servers    
+        for node in servers:
             info('*** Degree of Server ',node.id, ' is - ', len(node.edges), '\n')
