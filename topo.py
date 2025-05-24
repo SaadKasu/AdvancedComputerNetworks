@@ -130,10 +130,10 @@ class Fattree:
         for first_node in self.switches:
             for second_node in self.switches:
                 if first_node.is_neighbor(second_node):
-                    print(first_node.id '-is neighbour of-',second_node.id,'\n')
+                    print(first_node.id,'-is neighbour of-',second_node.id,'\n')
 
             for second_node in self.servers:
                 if first_node.is_neighbor(second_node):
-                    print(first_node.id '-is neighbour of-',second_node.id,'\n')
+                    print(first_node.id,'-is neighbour of-',second_node.id,'\n')
 
 fatTree = Fattree(4)
