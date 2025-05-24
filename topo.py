@@ -74,14 +74,14 @@ class Fattree:
         # Core Layer Switch Creation
         for switch_number in range(number_core_switches):
             currNode = Node("core-"+str(switch_number), "switch")
-            switches.add(currNode)
+            self.switches.add(currNode)
         # Aggregation Layer Switch Creation
         count = 0 
         for switch_number in range(half_switches_in_pod):
             currNode = Node("aggregation-"+str(switch_number), "switch")
-            switches.add(currNode)
+            self.switches.add(currNode)
             for core_switch_number in range(count, count + half_ports):
-                currNode.add_edge(switches[core_switch_number])
+                currNode.add_edge(self.switches[core_switch_number])
             count += half_ports
             if count >=number_core_switches :
                 count = 0
@@ -91,10 +91,10 @@ class Fattree:
         count_edge_switches = 0
         for switch_number in range(half_switches_in_pod):
             currNode = Node("edge-"+str(switch_number), "switch")
-            switches.add(currNode)
+            self.switches.add(currNode)
             count_edge_switches+=1
             for aggr_switch_number in range(count, count + half_ports):
-                currNode.add_edge(switches[aggr_switch_number])
+                currNode.add_edge(self.switches[aggr_switch_number])
             if count_edge_switches >= half_ports:
                 count_edge_switches = 0
                 count += half_ports
@@ -104,22 +104,22 @@ class Fattree:
         hosts_in_server = 0
         for server_number in range(number_hosts):
             currNode = Node("host-"+str(server_number), "host")
-            servers.add(currNode)
+            self.servers.add(currNode)
             hosts_in_switch+=1
-            currNode.add_edge(switches[count])
+            currNode.add_edge(self.switches[count])
             if hosts_in_switch >= half_ports:
                 hosts_in_switch = 0
                 count+=1
 		
         # Checking the Degree of each switch in the topology.
         info ('Printing degree of each switch in topology')
-        for node in switches: 
+        for node in self.switches: 
             info('*** Degree of Switch ',node.id, ' is - ', len(node.edges), '\n')
 
 
         # Checking the Degree of each host in the topology.
         info ('Printing degree of each server in topology')
-        for node in servers:
+        for node in self.servers:
             info('*** Degree of Server ',node.id, ' is - ', len(node.edges), '\n')
 
 
