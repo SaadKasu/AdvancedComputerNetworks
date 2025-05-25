@@ -45,7 +45,7 @@ class FattreeNet(Topo):
     """
 
     def __init__(self, ft_topo):
-        self.hosts = []
+        self.servers = []
         self.core_switches = []
         self.aggr_switches = []
         self.edge_switches = []
