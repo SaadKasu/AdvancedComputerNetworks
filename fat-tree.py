@@ -49,6 +49,7 @@ class FattreeNet(Topo):
         self.core_switches = []
         self.aggr_switches = []
         self.edge_switches = []
+        self.links = []
         half_ports = int(num_ports/2)
         core_count = 0
         aggr_count = half_ports
@@ -75,7 +76,8 @@ class FattreeNet(Topo):
             self.aggr_switches.append(switch)
             aggr_count +=1
             for j in range(half_ports):
-                self.addLink(switch, self.core_switches[core_count +j], bw= 15, delay='15ms', cls = TCLink)
+                link = self.addLink(switch, self.core_switches[core_count +j], bw= 15, delay='15ms', cls = TCLink)
+            self.links.append(link)
             core_count += half_ports
             if aggr_count >= num_ports:
                 pod_count += 1
@@ -89,10 +91,12 @@ class FattreeNet(Topo):
             switch = self.addSwitch("edge"+str(pod_count)+str(edge_count), cls = OVSKernelSwitch, ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.1')
             self.edge_switches.append(switch)
             for j in range(half_ports):
-                self.addLink(switch, self.aggr_switches[aggr_count +j], bw= 15, delay='15ms', cls = TCLink)
+                link = self.addLink(switch, self.aggr_switches[aggr_count +j], bw= 15, delay='15ms', cls = TCLink)
+                self.links.append(link)
             for k in range (2, half_ports + 2):
                 server = self.addHost('host'+str(server_count), ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(k))
-                self.addLink(server,switch, bw=15, delay='10ms', cls = TCLink)
+                link = self.addLink(server,switch, bw=15, delay='10ms', cls = TCLink)
+                self.links.append(link)
                 self.servers.append(server)
             edge_count +=1
             if edge_count >= half_ports:
@@ -101,16 +105,19 @@ class FattreeNet(Topo):
                 edge_count =0
         info('*** Printing Hosts ***\n')
         for host in self.servers:
-            info('Server name - '+host.name + ' Server IP - '+ host.ip + '\n')
+            info('Server name - '+host+ ' Server IP - '+ host.ip + '\n')
         info('*** Printing Core Switches ***\n')
         for switch in self.core_switches:
-            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
         info('*** Printing Aggr Switches ***\n')
         for switch in self.aggr_switches:
-            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
         info('*** Printing Edge Switches ***\n')
         for switch in self.edge_switches:
-            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
+        info('*** Printing Links ***\n')
+        for link in self.links:
+            info('Link name - '+link+ ' link node 1 - '+ link.node1 +' link node 2 - '+ link.node2  + '\n')
         
         # TODO: please complete the network generation logic here
 
