@@ -37,6 +37,7 @@ from mininet.util import waitListening, custom
 
 from topo import Fattree
 
+num_ports=4
 
 class FattreeNet(Topo):
     """
@@ -44,7 +45,10 @@ class FattreeNet(Topo):
     """
 
     def __init__(self, ft_topo):
-
+        self.hosts = []
+        self.core_switches = []
+        self.aggr_switches = []
+        self.edge_switches = []
         Topo.__init__(self)
         for server in ft_topo.servers:
             info('*** ft_topo Server - ', server.id,' ***\n')
@@ -78,5 +82,5 @@ def run(graph_topo):
 
 
 if __name__ == '__main__':
-    ft_topo = Fattree(4)
+    ft_topo = Fattree(num_ports)
     run(ft_topo)
