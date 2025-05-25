@@ -105,19 +105,19 @@ class FattreeNet(Topo):
                 edge_count =0
         info('*** Printing Hosts ***\n')
         for host in self.servers:
-            info('Server name - '+host+ ' Server IP - '+ host.ip + '\n')
+            info('Server name - '+host+ '\n')
         info('*** Printing Core Switches ***\n')
         for switch in self.core_switches:
-            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ '\n')
         info('*** Printing Aggr Switches ***\n')
         for switch in self.aggr_switches:
-            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ '\n')
         info('*** Printing Edge Switches ***\n')
         for switch in self.edge_switches:
-            info('Switch name - '+switch+ ' Switch IP - '+ switch.ip + '\n')
+            info('Switch name - '+switch+ '\n')
         info('*** Printing Links ***\n')
         for link in self.links:
-            info('Link name - '+link+ ' link node 1 - '+ link.node1 +' link node 2 - '+ link.node2  + '\n')
+            info('Link name - '+link+ ' link node 1 - '+ link.intf1 +' link node 2 - '+ link.intf2  + '\n')
         
         # TODO: please complete the network generation logic here
 
