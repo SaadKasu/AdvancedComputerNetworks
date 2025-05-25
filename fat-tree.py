@@ -56,14 +56,15 @@ class FattreeNet(Topo):
         edge_count = 0
         server_count = 0
         Topo.__init__(self)
-        for server in ft_topo.servers:
-            info('*** ft_topo Server - ', server.id,' ***\n')
-        for switch in ft_topo.switches:
-            info('*** ft_topo Switch - ', switch.id,' ***\n')
+        
+        #for server in ft_topo.servers:
+           # info('*** ft_topo Server - ', server.id,' ***\n')
+        #for switch in ft_topo.switches:
+            #info('*** ft_topo Switch - ', switch.id,' ***\n')
 
         for i in range(1, half_ports + 1):
             for j in range(1, half_ports + 1):
-                switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+num_ports+'.'+i+'.'+j)
+                switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+num_ports+'.'+str(i)+'.'+str(j))
                 self.core_switches.append(switch)
                 core_count +=1
         
