@@ -63,12 +63,12 @@ class FattreeNet(Topo):
 
         for i in range(1, half_ports + 1):
             for j in range(1, half_ports + 1):
-                switch = self.addSwitch("core"+str(core_count), cls = OVSBridge, ip = '10.'+num_ports+'.'+i+'.'+j)
+                switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+num_ports+'.'+i+'.'+j)
                 self.core_switches.append(switch)
                 core_count +=1
         
         for i in range (int((num_ports**2)/2)):
-            switch = self.addSwitch("aggr"+str(pod_count)+str(aggr_count), cls = OVSBridge, ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.1')
+            switch = self.addSwitch("aggr"+str(pod_count)+str(aggr_count), cls = OVSKernelSwitch, ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.1')
             self.aggr_switches.append(switch)
             aggr_count +=1
             for j in range(half_ports):
@@ -83,7 +83,7 @@ class FattreeNet(Topo):
         aggr_count = 0
 
         for i in range (int((num_ports**2)/2)):
-            switch = self.addSwitch("edge"+str(pod_count)+str(edge_count), cls = OVSBridge, ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.1')
+            switch = self.addSwitch("edge"+str(pod_count)+str(edge_count), cls = OVSKernelSwitch, ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.1')
             self.edge_switches.append(switch)
             for j in range(half_ports):
                 self.addLink(switch, self.aggr_switches[aggr_count +j], bw= 15, delay='15ms', cls = TCLink)
