@@ -49,7 +49,7 @@ class FattreeNet(Topo):
         self.core_switches = []
         self.aggr_switches = []
         self.edge_switches = []
-        self.links = []
+        self.all_links = []
         half_ports = int(num_ports/2)
         core_count = 0
         aggr_count = half_ports
@@ -77,7 +77,7 @@ class FattreeNet(Topo):
             aggr_count +=1
             for j in range(half_ports):
                 link = self.addLink(switch, self.core_switches[core_count +j], bw= 15, delay='15ms', cls = TCLink)
-            self.links.append(link)
+            self.all_links.append(link)
             core_count += half_ports
             if aggr_count >= num_ports:
                 pod_count += 1
@@ -92,11 +92,11 @@ class FattreeNet(Topo):
             self.edge_switches.append(switch)
             for j in range(half_ports):
                 link = self.addLink(switch, self.aggr_switches[aggr_count +j], bw= 15, delay='15ms', cls = TCLink)
-                self.links.append(link)
+                self.all_links.append(link)
             for k in range (2, half_ports + 2):
                 server = self.addHost('host'+str(server_count), ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(k))
                 link = self.addLink(server,switch, bw=15, delay='10ms', cls = TCLink)
-                self.links.append(link)
+                self.all_links.append(link)
                 self.servers.append(server)
             edge_count +=1
             if edge_count >= half_ports:
@@ -116,8 +116,8 @@ class FattreeNet(Topo):
         for switch in self.edge_switches:
             info('Switch name - '+switch+ '\n')
         info('*** Printing Links ***\n')
-        for link in self.links:
-            info('Link name - '+str(link)+'\n')
+        for link in self.all_links:
+            info('Link - '+str(link)+'\n')
         
         # TODO: please complete the network generation logic here
 
