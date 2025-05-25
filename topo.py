@@ -135,5 +135,3 @@ class Fattree:
             for second_node in self.servers:
                 if first_node.is_neighbor(second_node) and first_node.id != second_node.id:
                     print(first_node.id,'-is neighbour of-',second_node.id,'\n')
-
-fatTree = Fattree(4)
