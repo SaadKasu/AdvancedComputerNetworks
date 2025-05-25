@@ -49,11 +49,66 @@ class FattreeNet(Topo):
         self.core_switches = []
         self.aggr_switches = []
         self.edge_switches = []
+        half_ports = int(num_ports/2)
+        core_count = 0
+        aggr_count = half_ports
+        pod_count = 0
+        edge_count = 0
+        server_count = 0
         Topo.__init__(self)
         for server in ft_topo.servers:
             info('*** ft_topo Server - ', server.id,' ***\n')
         for switch in ft_topo.switches:
             info('*** ft_topo Switch - ', switch.id,' ***\n')
+
+        for i in range(1, half_ports + 1):
+            for j in range(1, half_ports + 1):
+                switch = self.addSwitch("core"+str(core_count), cls = OVSBridge, ip = '10.'+num_ports+'.'+i+'.'+j)
+                self.core_switches.append(switch)
+                core_count +=1
+        
+        for i in range (int((num_ports**2)/2)):
+            switch = self.addSwitch("aggr"+str(pod_count)+str(aggr_count), cls = OVSBridge, ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.1')
+            self.aggr_switches.append(switch)
+            aggr_count +=1
+            for j in range(half_ports):
+                self.addLink(switch, self.core_switches[core_count +j], bw= 15, delay='15ms', cls = TCLink)
+            core_count += half_ports
+            if aggr_count >= num_ports:
+                pod_count += 1
+                aggr_count = half_ports
+                core_count =0
+
+        pod_count = 0
+        aggr_count = 0
+
+        for i in range (int((num_ports**2)/2)):
+            switch = self.addSwitch("edge"+str(pod_count)+str(edge_count), cls = OVSBridge, ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.1')
+            self.edge_switches.append(switch)
+            for j in range(half_ports):
+                self.addLink(switch, self.aggr_switches[aggr_count +j], bw= 15, delay='15ms', cls = TCLink)
+            for k in range (2, half_ports + 2):
+                server = self.addHost('host'+str(server_count), ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(k))
+                self.addLink(server,switch, bw=15, delay='10ms', cls = TCLink)
+                self.servers.append(server)
+            edge_count +=1
+            if edge_count >= half_ports:
+                pod_count += 1
+                aggr_count += half_ports
+                edge_count =0
+        info('*** Printing Hosts ***\n')
+        for host in self.servers:
+            info('Server name - '+host.name + ' Server IP - '+ host.ip + '\n')
+        info('*** Printing Core Switches ***\n')
+        for switch in self.core_switches:
+            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+        info('*** Printing Aggr Switches ***\n')
+        for switch in self.aggr_switches:
+            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+        info('*** Printing Edge Switches ***\n')
+        for switch in self.edge_switches:
+            info('Switch name - '+switch.name + ' Switch IP - '+ switch.ip + '\n')
+        
         # TODO: please complete the network generation logic here
 
 
