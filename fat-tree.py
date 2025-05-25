@@ -46,8 +46,8 @@ class FattreeNet(Topo):
     def __init__(self, ft_topo):
 
         Topo.__init__(self)
-        info('*** ft_topo ***\n', ft_topo)
-
+        info('*** ft_topo Servers ***\n', ft_topo.servers)
+        info('*** ft_topo Switches ***\n', ft_topo.switches)
         # TODO: please complete the network generation logic here
 
 
