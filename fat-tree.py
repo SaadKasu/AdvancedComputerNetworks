@@ -95,6 +95,7 @@ class FattreeNet(Topo):
                 self.all_links.append(link)
             for k in range (2, half_ports + 2):
                 server = self.addHost('host'+str(server_count), ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(k))
+                server_count +=1
                 link = self.addLink(server,switch, bw=15, delay='10ms', cls = TCLink)
                 self.all_links.append(link)
                 self.servers.append(server)
