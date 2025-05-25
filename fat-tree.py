@@ -46,8 +46,10 @@ class FattreeNet(Topo):
     def __init__(self, ft_topo):
 
         Topo.__init__(self)
-        info('*** ft_topo Servers ***\n', ft_topo.servers)
-        info('*** ft_topo Switches ***\n', ft_topo.switches)
+        for server in ft_topo.servers:
+            info('*** ft_topo Server - ', server.id,' ***\n')
+        for switch in ft_topo.switches:
+            info('*** ft_topo Switch - ', switch.id,' ***\n')
         # TODO: please complete the network generation logic here
 
 
