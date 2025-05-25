@@ -117,7 +117,7 @@ class FattreeNet(Topo):
             info('Switch name - '+switch+ '\n')
         info('*** Printing Links ***\n')
         for link in self.links:
-            info('Link name - '+link+ ' link node 1 - '+ link.intf1 +' link node 2 - '+ link.intf2  + '\n')
+            info('Link name - '+link+'\n')
         
         # TODO: please complete the network generation logic here
 
