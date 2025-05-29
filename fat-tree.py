@@ -104,6 +104,8 @@ class FattreeNet(Topo):
                 pod_count += 1
                 aggr_count += half_ports
                 edge_count =0
+
+
         info('*** Printing Hosts ***\n')
         for host in self.servers:
             info('Server name - '+host+ '\n')
@@ -119,8 +121,6 @@ class FattreeNet(Topo):
         info('*** Printing Links ***\n')
         for link in self.all_links:
             info('Link - '+str(link)+'\n')
-        
-        # TODO: please complete the network generation logic here
 
 
 def make_mininet_instance(graph_topo):
