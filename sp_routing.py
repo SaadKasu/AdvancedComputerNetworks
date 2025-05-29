@@ -47,6 +47,9 @@ class SPRouter(app_manager.RyuApp):
         
         # Initialize the topology with #ports=4
         self.topo_net = topo.Fattree(4)
+
+        for node in topo_net.nodes():
+            print (" \t\t" + str(node))
         
 
 
