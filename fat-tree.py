@@ -126,12 +126,18 @@ class FattreeNet(Topo):
 
         for switch in ft_topo.switches :
             for edge in switch.edges :
-                neighbour_node = edge.rnode
+                r_neighbour_node = edge.rnode
+                l_neighbour_node = edge.lnode
 
-                if str(switch.id)+"-"+str(neighbour_node.id) not in links and str(neighbour_node.id)+"-"+str(switch.id) not in links and switch.id != neighbour_node.id:
-                    info("neighbour node id -"+neighbour_node.id + "Switch id- "+switch.id)
-                    self.addLink(self.node_map[switch.id],self.node_map[neighbour_node.id], bw=15, delay='10ms', cls = TCLink)
-                    links.add(str(switch.id)+"-"+str(neighbour_node.id))
+                if str(switch.id)+"-"+str(r_neighbour_node.id) not in links and str(r_neighbour_node.id)+"-"+str(switch.id) not in links and switch.id != r_neighbour_node.id:
+                    info("neighbour node id -"+r_neighbour_node.id + "Switch id- "+switch.id)
+                    self.addLink(self.node_map[switch.id],self.node_map[r_neighbour_node.id], bw=15, delay='10ms', cls = TCLink)
+                    links.add(str(switch.id)+"-"+str(r_neighbour_node.id))
+
+                if str(switch.id)+"-"+str(l_neighbour_node.id) not in links and str(l_neighbour_node.id)+"-"+str(switch.id) not in links and switch.id != l_neighbour_node.id:
+                    info("neighbour node id -"+l_neighbour_node.id + "Switch id- "+switch.id)
+                    self.addLink(self.node_map[switch.id],self.node_map[l_neighbour_node.id], bw=15, delay='10ms', cls = TCLink)
+                    links.add(str(switch.id)+"-"+str(l_neighbour_node.id))
 
 """
         for i in range(1, half_ports + 1):
