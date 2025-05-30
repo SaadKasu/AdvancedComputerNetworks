@@ -131,7 +131,7 @@ class FattreeNet(Topo):
                 if str(switch.id)+"-"+str(neighbour_node.id) in links or str(neighbour_node.id)+"-"+str(switch.id) in links :
                     continue
 
-                self.addLink(self.node_map(switch.id),self.node_map(neighbour_node), bw=15, delay='10ms', cls = TCLink)
+                self.addLink(self.node_map(switch.id),self.node_map(neighbour_node.id), bw=15, delay='10ms', cls = TCLink)
                 links.add(str(switch.id)+"-"+str(neighbour_node.id))
 
 """
