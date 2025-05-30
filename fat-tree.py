@@ -46,16 +46,22 @@ class FattreeNet(Topo):
 
     def __init__(self, ft_topo):
         self.servers = []
+        self.node_map = {}
+        links = set([])
+        """
         self.core_switches = []
         self.aggr_switches = []
         self.edge_switches = []
         self.all_links = []
+        """
         half_ports = int(num_ports/2)
         core_count = 0
         aggr_count = half_ports
         pod_count = 0
         edge_count = 0
         server_count = 0
+        i = 1
+        j = 1
         Topo.__init__(self)
         
         #for server in ft_topo.servers:
@@ -63,6 +69,73 @@ class FattreeNet(Topo):
         #for switch in ft_topo.switches:
             #info('*** ft_topo Switch - ', switch.id,' ***\n')
 
+        for switch in ft_topo.switches :
+
+            if switch.id.contains("core") :
+                added_switch = self.addSwitch(switch.id, 
+                cls = OVSKernelSwitch, 
+                ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
+                dpid = int(str(num_ports) + str(core_count)))
+                self.node_map[switch.id] = added_switch
+                j + = 1
+                if j >= half_ports :
+                    i += 1
+                    j = 1
+
+            elif switch.id.contains("aggregation") : 
+                self.addSwitch(switch.id, 
+                cls = OVSKernelSwitch, 
+                ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
+                dpid = int(str(pod_count) + str(aggr_count)))
+                self.node_map[switch.id] = added_switch
+                aggr_count + = 1
+                if aggr_count >= num_ports :
+                    pod_count += 1
+                    aggr_count = half_ports
+                if pod_count >= num_ports :
+                    pod_count = 0
+
+            else : 
+                self.addSwitch(switch.id, 
+                cls = OVSKernelSwitch, 
+                ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
+                dpid = int(str(pod_count) + str(edge_count)))
+                self.node_map[switch.id] = added_switch
+                edge_count + = 1
+                if edge_count >= half_ports :
+                    pod_count += 1
+                    edge_count = 0
+                if pod_count >= num_ports :
+                    pod_count = 0
+
+        pod_count = 0
+        edge_count = 0
+        host_count = 2
+
+        for host in ft_topo.servers :
+            added_host = self.addHost(host.id,
+            ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count))
+            self.node_map[host.id] = added_host
+            host_count += 1
+            if host_count - 2 >= half_ports:
+                edge_count += 1
+                host_count = 2
+            if edge_count >= half_ports :
+                pod_count += 1
+                edge_count = 0 
+
+        for switch in ft_topo.switches :
+            for edge in switch.edges :
+                neighbour_node = edge.rnode
+                
+                if (links.contains(str(switch.id)+"-"+str(neighbour_node.id)) or 
+                links.contains(str(neighbour_node.id)+"-"+str(switch.id)))
+                    continue
+
+                self.addLink(self.node_map(switch.id),self.node_map(neighbour_node), bw=15, delay='10ms', cls = TCLink)
+                links.add(str(switch.id)+"-"+str(neighbour_node.id))
+
+"""
         for i in range(1, half_ports + 1):
             for j in range(1, half_ports + 1):
                 switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j), dpid = "core"+str(core_count))
@@ -105,7 +178,6 @@ class FattreeNet(Topo):
                 aggr_count += half_ports
                 edge_count =0
 
-
         info('*** Printing Hosts ***\n')
         for host in self.servers:
             info('Server name - '+host+ '\n')
@@ -122,6 +194,7 @@ class FattreeNet(Topo):
         for link in self.all_links:
             info('Link - '+str(link)+'\n')
 
+"""
 
 def make_mininet_instance(graph_topo):
 
