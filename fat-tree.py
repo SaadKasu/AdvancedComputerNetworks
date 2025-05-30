@@ -120,7 +120,9 @@ class FattreeNet(Topo):
 
         for host in ft_topo.servers :
             added_host = self.addHost(host.id,
-            ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count))
+            ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count)
+            dpid = str(2) + str(server_count))
+            server_count += 1
             self.node_map[host.id] = added_host
             host_count += 1
             if host_count - 2 >= half_ports:
