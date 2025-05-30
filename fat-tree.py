@@ -37,7 +37,7 @@ from mininet.util import waitListening, custom
 
 from topo import Fattree
 
-num_ports=4
+num_ports=6
 
 class FattreeNet(Topo):
     """
@@ -60,6 +60,9 @@ class FattreeNet(Topo):
         pod_count = 0
         edge_count = 0
         server_count = 0
+        core_switch = 0
+        aggr_switch = 0
+        edge_switch = 0
         i = 1
         j = 1
         Topo.__init__(self)
@@ -75,7 +78,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
-                dpid = str(num_ports) + str(core_count))
+                dpid = str(0) + str(core_switch))
+                core_switch += 1
                 self.node_map[switch.id] = added_switch
                 j += 1
                 if j >= half_ports :
@@ -86,7 +90,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
-                dpid = str(pod_count) + str(aggr_count))
+                dpid = str(1) + str(aggr_switch))
+                aggr_switch += 1
                 self.node_map[switch.id] = added_switch
                 aggr_count += 1
                 if aggr_count >= num_ports :
@@ -99,7 +104,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
-                dpid = str(pod_count) + str(edge_count))
+                dpid = str(2) + str(edge_switch))
+                edge_switch += 1
                 self.node_map[switch.id] = added_switch
                 edge_count += 1
                 if edge_count >= half_ports :
