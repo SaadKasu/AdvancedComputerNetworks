@@ -76,11 +76,12 @@ class FattreeNet(Topo):
         for switch in ft_topo.switches :
 
             if "c-" in switch.id :
+                dp_id = int (str(1) + str(core_switch)) 
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
-                dpid = str(1) + str(core_switch))
-                self.name_dpId_map[switch.id] = str(1) + str(core_switch)
+                dpid = dp_id)
+                self.name_dpId_map[switch.id] = dp_id
                 core_switch += 1
                 self.node_map[switch.id] = added_switch
                 j += 1
@@ -88,12 +89,13 @@ class FattreeNet(Topo):
                     i += 1
                     j = 1
 
-            elif "a-" in switch.id : 
+            elif "a-" in switch.id :
+                dp_id = int (str(2) + str(aggr_switch)) 
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
-                dpid = str(2) + str(aggr_switch))
-                self.name_dpId_map[switch.id] = str(2) + str(aggr_switch)
+                dpid = dp_id)
+                self.name_dpId_map[switch.id] = dp_id
                 aggr_switch += 1
                 self.node_map[switch.id] = added_switch
                 aggr_count += 1
@@ -104,11 +106,12 @@ class FattreeNet(Topo):
                     pod_count = 0
 
             else : 
+                dp_id = int (str(3) + str(edge_switch))
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
-                dpid = str(3) + str(edge_switch))
-                self.name_dpId_map[switch.id] = str(3) + str(edge_switch)
+                dpid = dp_id)
+                self.name_dpId_map[switch.id] = dp_id
                 edge_switch += 1
                 self.node_map[switch.id] = added_switch
                 edge_count += 1
@@ -123,11 +126,12 @@ class FattreeNet(Topo):
         host_count = 2
 
         for host in ft_topo.servers :
+            dp_id = int (str(4) + str(server_count))
+            info("\n Host - ",dp_id)
             added_host = self.addHost(host.id,
             ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count),
-            dpid = str(4) + str(server_count))
-            info("\n Host DP_Id - ",added_host)
-            self.name_dpId_map[host.id] = str(4) + str(server_count)
+            dpid = dp_id)
+            self.name_dpId_map[host.id] = dp_id
             server_count += 1
             self.node_map[host.id] = added_host
             host_count += 1
