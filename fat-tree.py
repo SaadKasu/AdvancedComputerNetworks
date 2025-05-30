@@ -65,7 +65,7 @@ class FattreeNet(Topo):
 
         for i in range(1, half_ports + 1):
             for j in range(1, half_ports + 1):
-                switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j))
+                switch = self.addSwitch("core"+str(core_count), cls = OVSKernelSwitch, ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j), dpid = "core"+str(core_count))
                 self.core_switches.append(switch)
                 core_count +=1
 
