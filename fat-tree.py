@@ -37,7 +37,7 @@ from mininet.util import waitListening, custom
 
 from topo import Fattree
 
-num_ports=6
+num_ports=4
 
 class FattreeNet(Topo):
     """
