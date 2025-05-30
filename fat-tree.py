@@ -75,7 +75,7 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
-                dpid = int(str(num_ports) + str(core_count)))
+                dpid = str(num_ports) + str(core_count))
                 self.node_map[switch.id] = added_switch
                 j += 1
                 if j >= half_ports :
@@ -86,7 +86,7 @@ class FattreeNet(Topo):
                 self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
-                dpid = int(str(pod_count) + str(aggr_count)))
+                dpid = str(pod_count) + str(aggr_count))
                 self.node_map[switch.id] = added_switch
                 aggr_count += 1
                 if aggr_count >= num_ports :
@@ -99,7 +99,7 @@ class FattreeNet(Topo):
                 self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
-                dpid = int(str(pod_count) + str(edge_count)))
+                dpid = str(pod_count) + str(edge_count))
                 self.node_map[switch.id] = added_switch
                 edge_count += 1
                 if edge_count >= half_ports :
