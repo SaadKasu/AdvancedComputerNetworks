@@ -126,6 +126,7 @@ class FattreeNet(Topo):
             added_host = self.addHost(host.id,
             ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count),
             dpid = str(4) + str(server_count))
+            info("\n Host DP_Id - ",added_host.dpid)
             self.name_dpId_map[host.id] = str(4) + str(server_count)
             server_count += 1
             self.node_map[host.id] = added_host
