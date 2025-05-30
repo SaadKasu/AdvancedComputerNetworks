@@ -128,7 +128,7 @@ class FattreeNet(Topo):
             for edge in switch.edges :
                 neighbour_node = edge.rnode
                 
-                if links.contains(str(switch.id)+"-"+str(neighbour_node.id)) or links.contains(str(neighbour_node.id)+"-"+str(switch.id)) :
+                if str(switch.id)+"-"+str(neighbour_node.id) in links or str(neighbour_node.id)+"-"+str(switch.id) in links :
                     continue
 
                 self.addLink(self.node_map(switch.id),self.node_map(neighbour_node), bw=15, delay='10ms', cls = TCLink)
