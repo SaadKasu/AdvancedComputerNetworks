@@ -83,7 +83,7 @@ class FattreeNet(Topo):
                     j = 1
 
             elif "aggregation" in switch.id : 
-                self.addSwitch(switch.id, 
+                added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
                 dpid = str(pod_count) + str(aggr_count))
@@ -96,7 +96,7 @@ class FattreeNet(Topo):
                     pod_count = 0
 
             else : 
-                self.addSwitch(switch.id, 
+                added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
                 dpid = str(pod_count) + str(edge_count))
