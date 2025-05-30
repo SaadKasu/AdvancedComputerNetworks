@@ -47,6 +47,7 @@ class FattreeNet(Topo):
     def __init__(self, ft_topo):
         self.servers = []
         self.node_map = {}
+        self.name_dpId_map = {}
         links = set([])
         """
         self.core_switches = []
@@ -78,7 +79,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
-                dpid = str(0) + str(core_switch))
+                dpid = str(1) + str(core_switch))
+                name_dpId_map[switch.id] = str(1) + str(core_switch)
                 core_switch += 1
                 self.node_map[switch.id] = added_switch
                 j += 1
@@ -90,7 +92,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
-                dpid = str(1) + str(aggr_switch))
+                dpid = str(2) + str(aggr_switch))
+                name_dpId_map[switch.id] = str(2) + str(aggr_switch)
                 aggr_switch += 1
                 self.node_map[switch.id] = added_switch
                 aggr_count += 1
@@ -104,7 +107,8 @@ class FattreeNet(Topo):
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
-                dpid = str(2) + str(edge_switch))
+                dpid = str(3) + str(edge_switch))
+                name_dpId_map[switch.id] = str(3) + str(edge_switch)
                 edge_switch += 1
                 self.node_map[switch.id] = added_switch
                 edge_count += 1
@@ -121,7 +125,8 @@ class FattreeNet(Topo):
         for host in ft_topo.servers :
             added_host = self.addHost(host.id,
             ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count),
-            dpid = str(2) + str(server_count))
+            dpid = str(4) + str(server_count))
+            name_dpId_map[host.id] = str(1) + str(server_count)
             server_count += 1
             self.node_map[host.id] = added_host
             host_count += 1
