@@ -45,15 +45,6 @@ class SPRouter(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
-    adjacency=defaultdict(lambda:defaultdict(lambda:None))
-    switch_dpid_list = []
-    global_mac_table = {}
-    switch_mac_table = []
-    network_topology = {}
-    found_paths = [[]]
-    controller_mac ="0A:00:27:00:00:43"
-    controller_ip = "127.0.0.1"
-
     def __init__(self, *args, **kwargs):
         super(SPRouter, self).__init__(*args, **kwargs)
         
@@ -64,28 +55,33 @@ class SPRouter(app_manager.RyuApp):
         self.datapath_list = {} #Save datapath contents of a switch
         self.switch_count = 0
 
-    def dijkstra(src, dst, first_port, final_port):
+        self.adjacency=defaultdict(lambda:defaultdict(lambda:None))
+        self.switch_dpid_list = []
+        self.global_mac_table = {}
+        self.switch_mac_table = []
+        self.network_topology = {}
+        self.found_paths = [[]]
+        self.controller_mac ="0A:00:27:00:00:43"
+        self.controller_ip = "127.0.0.1"
 
-        global network_topology
-        global adjacency
-        global switch_dpid_list
+    def dijkstra(src, dst, first_port, final_port):
 
         distance = {}
         previous = {}
-        for dpid in switch_dpid_list:
+        for dpid in self.switch_dpid_list:
             distance[dpid] = float('Inf')
             previous[dpid] = None
         distance[src] = 0
-        Q = set(switch_dpid_list)
+        Q = set(self.switch_dpid_list)
 
         while len(Q) > 0:
             u = minimum_distance(distance, Q)
             Q.remove(u)
 
-            for p in switch_dpid_list:
-                if adjacency[u][p] != None:
-                    if distance[p] > distance[u] + network_topology[u][p]:
-                        distance[p] = distance[u] + network_topology[u][p]
+            for p in self.switch_dpid_list:
+                if self.adjacency[u][p] != None:
+                    if distance[p] > distance[u] + self.network_topology[u][p]:
+                        distance[p] = distance[u] + self.network_topology[u][p]
                         previous[p] = u
         r = []
         p = dst
@@ -110,9 +106,9 @@ class SPRouter(app_manager.RyuApp):
         r = []
         in_port = first_port
         for s1, s2 in zip(path[:-1], path[1:]):
-            out_port = adjacency[s1][s2]
+            out_port = self.adjacency[s1][s2]
             r.append((s1, in_port, out_port))
-            in_port = adjacency[s2][s1]
+            in_port = self.adjacency[s2][s1]
         r.append((dst, in_port, final_port))
         # print("The result is: ", r)
         return r
@@ -129,18 +125,15 @@ class SPRouter(app_manager.RyuApp):
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
-        global switch_dpid_list
-        global switch_mac_table
-        global adjacency
-        global network_topology
+
         # Switches and links in the network
-        switches = get_switch(self, None)
+        self.switches = get_switch(self, None)
         links = get_link(self, None)
 
          # getting dpid of each switch
-        switch_dpid_list = [switch.dp.id for switch in switches]
+        self.switch_dpid_list = [switch.dp.id for switch in self.switches]
         #  self.datapath_list = [switch.dp for switch in switch_list]  # getting the datapath of each switch
-        for switch in switches:
+        for switch in self.switches:
             self.datapath_list[switch.dp.id] = switch.dp
 
         mylinks = [(link.src.dpid, link.dst.dpid, link.src.port_no, link.dst.port_no) for link in links]
@@ -148,13 +141,13 @@ class SPRouter(app_manager.RyuApp):
             # If the direction of a link is: From source dpid to destination dpid ( let's
             # say from switch number 1 to switch number 2), then the egress port would be source port of this link
             # object and vice versa
-            adjacency[s1][s2] = port1
-            adjacency[s2][s1] = port2  # This is the vice versa :D
+            self.adjacency[s1][s2] = port1
+            self.adjacency[s2][s1] = port2  # This is the vice versa :D
 
         for dpid_src, dpid_dst, src_port, dst_port in links:
-            network_topology[dpid_src][dpid_dst] = 1
+            self.network_topology[dpid_src][dpid_dst] = 1
 
-        switch_mac_table = [{} for x in range(self.switch_count + 1)]
+        self.switch_mac_table = [{} for x in range(self.switch_count + 1)]
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -164,16 +157,16 @@ class SPRouter(app_manager.RyuApp):
         parser = datapath.ofproto_parser
     
         # Set initial values for all links to this switch to infinite
-        network_topology[datapath.id] = {}
+        self.network_topology[datapath.id] = {}
         self.switch_count += 1
 
         
-        for id in network_topology:
-            network_topology[id][datapath.id] = float('inf')
-            network_topology[datapath.id][id] = float('inf')
+        for id in self.network_topology:
+            self.network_topology[id][datapath.id] = float('inf')
+            self.network_topology[datapath.id][id] = float('inf')
 
         # Set the value of the link to the current switch to 0
-        network_topology[datapath.id][datapath.id] = 0
+        self.network_topology[datapath.id][datapath.id] = 0
 
         # Install entry-miss flow entry
         match = parser.OFPMatch()
@@ -196,9 +189,7 @@ class SPRouter(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        global found_paths
-        global global_mac_table
-        global switch_mac_table
+
         msg = ev.msg
         datapath = msg.datapath
         ofp = datapath.ofproto
@@ -229,15 +220,15 @@ class SPRouter(app_manager.RyuApp):
             src_ip = ipv4_pkt.src
             dst_ip = ipv4_pkt.dst
 
-        if src_mac not in global_mac_table.keys():
-            global_mac_table[src_mac] = (dpid, in_port)
+        if src_mac not in self.global_mac_table.keys():
+            self.global_mac_table[src_mac] = (dpid, in_port)
 
-        if dst_mac in global_mac_table.keys():
-            p = dijkstra(global_mac_table[src_mac][0], global_mac_table[dst_mac][0], global_mac_table[src_mac][1],
-                         global_mac_table[dst_mac][1])
+        if dst_mac in self.global_mac_table.keys():
+            p = dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1],
+                         self.global_mac_table[dst_mac][1])
 
-            if p not in found_paths:
-                found_paths.append(p)
+            if p not in self.found_paths:
+                self.found_paths.append(p)
                 self.install_path(p, ev, src_mac, dst_mac)
                 # this will be the output port for this switch to redirect the packets to the desired destination
                 out_port = p[0][2]
@@ -260,8 +251,7 @@ class SPRouter(app_manager.RyuApp):
 
 
     def handle_arp(self, datapath, pkt, src, dst, in_port, msg):
-        global controller_mac
-        global controller_ip
+
         parser = datapath.ofproto_parser
         ofp = datapath.ofproto
         actions = [parser.OFPActionOutput(ofp.OFPP_FLOOD)]
@@ -271,13 +261,13 @@ class SPRouter(app_manager.RyuApp):
         arp_tpa = arp_pkt.dst_ip
 
         if arp_pkt.opcode == arp.ARP_REQUEST:  # check if it's an arp request
-            if arp_tpa == controller_ip:  # If a host sends an arp req for the controller ip, then this packet is for the controller
+            if arp_tpa == self.controller_ip:  # If a host sends an arp req for the controller ip, then this packet is for the controller
                 arp_reply = arp.arp(hwtype=1, proto=0x0800, hlen=6, plen=4, opcode=2,
-                                    src_mac=controller_mac, src_ip=controller_ip,
+                                    src_mac=self.controller_mac, src_ip=self.controller_ip,
                                     dst_mac=src, dst_ip=arp_spa)
                 eth_header = ethernet.ethernet(
                     dst=src,
-                    src=controller_mac,
+                    src=self.controller_mac,
                     ethertype=ether.ETH_TYPE_ARP)
                 arp_reply_pkt = packet.Packet()
                 arp_reply_pkt.add_protocol(eth_header)
@@ -292,20 +282,20 @@ class SPRouter(app_manager.RyuApp):
                 datapath.send_msg(out)
                 return
 
-            if src not in switch_mac_table[datapath.id].keys():
-                switch_mac_table[datapath.id][src] = (in_port, arp_tpa)  # Updating mac table of this 
+            if src not in self.switch_mac_table[datapath.id].keys():
+                self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)  # Updating mac table of this 
                 if msg.buffer_id == ofp.OFP_NO_BUFFER:
                     data = msg.data
                 out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,
                                           data=data)
                 datapath.send_msg(out)
                 return
-            if src in switch_mac_table[datapath.id].keys():
-                if arp_tpa in switch_mac_table[datapath.id][src]:
+            if src in self.switch_mac_table[datapath.id].keys():
+                if arp_tpa in self.switch_mac_table[datapath.id][src]:
                     return
 
                 else:
-                    switch_mac_table[datapath.id][src] = (in_port, arp_tpa)
+                    self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)
                     if msg.buffer_id == ofp.OFP_NO_BUFFER:
                         data = msg.data
                     out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port,
@@ -315,10 +305,10 @@ class SPRouter(app_manager.RyuApp):
                     return
 
         if arp_pkt.opcode == arp.ARP_REPLY:  # check if it's an arp reply
-            if dst in switch_mac_table[datapath.id].keys():
+            if dst in self.switch_mac_table[datapath.id].keys():
                 parser = datapath.ofproto_parser
                 ofp = datapath.ofproto
-                actions = [parser.OFPActionOutput(switch_mac_table[datapath.id][dst][0])]
+                actions = [parser.OFPActionOutput(self.switch_mac_table[datapath.id][dst][0])]
                 out = parser.OFPPacketOut(datapath=datapath, buffer_id=ofp.OFP_NO_BUFFER,
                                           in_port=in_port, actions=actions, data=msg.data)
                 datapath.send_msg(out)
