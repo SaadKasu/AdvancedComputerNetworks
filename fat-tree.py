@@ -80,8 +80,7 @@ class FattreeNet(Topo):
                 dp_id = str(1) + str(core_switch)
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
-                ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
-                dpid = dp_id)
+                ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j))
                 self.name_dpId_map[switch.id] = dp_id
                 core_switch += 1
                 self.node_map[switch.id] = added_switch
@@ -94,8 +93,7 @@ class FattreeNet(Topo):
                 dp_id = str(2) + str(aggr_switch)
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
-                ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
-                dpid = dp_id)
+                ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1")
                 self.name_dpId_map[switch.id] = dp_id
                 aggr_switch += 1
                 self.node_map[switch.id] = added_switch
@@ -110,8 +108,7 @@ class FattreeNet(Topo):
                 dp_id = str(3) + str(edge_switch)
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
-                ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
-                dpid = dp_id)
+                ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1")
                 self.name_dpId_map[switch.id] = dp_id
                 edge_switch += 1
                 self.node_map[switch.id] = added_switch
@@ -130,8 +127,7 @@ class FattreeNet(Topo):
             dp_id = str(4) + str(server_count)
             info("\n Host - ",dp_id)
             added_host = self.addHost(host.id,
-            ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count),
-            dpid = dp_id)
+            ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count))
             self.name_dpId_map[host.id] = dp_id
             server_count += 1
             self.node_map[host.id] = added_host
