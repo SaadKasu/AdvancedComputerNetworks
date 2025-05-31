@@ -45,6 +45,7 @@ class FattreeNet(Topo):
     """
 
     def __init__(self, ft_topo):
+        self.topo = ft_topo
         self.servers = []
         self.node_map = {}
         self.name_dpId_map = {}
@@ -223,7 +224,7 @@ def make_mininet_instance(graph_topo):
     net_topo = FattreeNet(graph_topo)
     net = Mininet(topo=net_topo, controller=None, autoSetMacs=True)
     net.addController('c0', controller=RemoteController,
-                      ip="127.0.0.1", port=6653)
+                      ip="127.0.0.1", port=6653, mac="0A:00:27:00:00:43")
     return net
 
 
