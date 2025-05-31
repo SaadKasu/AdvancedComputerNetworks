@@ -100,7 +100,7 @@ class SPRouter(app_manager.RyuApp):
         else:
             path = r
 
-        print "total distance: ", distance[dst]
+
 
         # Adding the ports
         r = []
@@ -322,7 +322,7 @@ class SPRouter(app_manager.RyuApp):
         shortest_path_route = ""
         for z in p:
             shortest_path_route += str(z[0]) + "-"
-        print("path(dpids)=", shortest_path_route, " src_mac=", src_mac, " dst_mac=", dst_mac)
+
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
