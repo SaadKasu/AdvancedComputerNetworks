@@ -63,6 +63,11 @@ class SPRouter(app_manager.RyuApp):
         self.mac_switch_port_map = {}
         self.datapath_list = {} #Save datapath contents of a switch
         self.switch_count = 0
+        global switch_dpid_list
+        global switch_mac_table
+        global global_mac_table
+        global network_topology
+        global adjacency
         
     def dijkstra(src, dst, first_port, final_port):
 
@@ -125,11 +130,6 @@ class SPRouter(app_manager.RyuApp):
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
-
-        global switch_dpid_list
-        global switch_mac_table
-        global global_mac_table
-        global network_topology
         
         # Switches and links in the network
         switches = get_switch(self, None)
