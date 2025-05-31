@@ -63,13 +63,12 @@ class SPRouter(app_manager.RyuApp):
         self.mac_switch_port_map = {}
         self.datapath_list = {} #Save datapath contents of a switch
         self.switch_count = 0
-        global switch_dpid_list
-        global switch_mac_table
-        global global_mac_table
+
+    def dijkstra(src, dst, first_port, final_port):
+
         global network_topology
         global adjacency
-        
-    def dijkstra(src, dst, first_port, final_port):
+        global switch_dpid_list
 
         distance = {}
         previous = {}
@@ -130,7 +129,10 @@ class SPRouter(app_manager.RyuApp):
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
-        
+        global switch_dpid_list
+        global switch_mac_table
+        global adjacency
+        global network_topology
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
@@ -195,6 +197,8 @@ class SPRouter(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         global found_paths
+        global global_mac_table
+        global switch_mac_table
         msg = ev.msg
         datapath = msg.datapath
         ofp = datapath.ofproto
@@ -256,6 +260,8 @@ class SPRouter(app_manager.RyuApp):
 
 
     def handle_arp(self, datapath, pkt, src, dst, in_port, msg):
+        global controller_mac
+        global controller_ip
         parser = datapath.ofproto_parser
         ofp = datapath.ofproto
         actions = [parser.OFPActionOutput(ofp.OFPP_FLOOD)]
