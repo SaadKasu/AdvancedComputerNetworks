@@ -77,7 +77,7 @@ class SPRouter(app_manager.RyuApp):
 
         while len(Q) > 0:
             u = self.minimum_distance(distance, Q)
-            #print("\nU - ", u)
+            print("\nU - ", u)
             if u in Q : 
                 Q.remove(u)
 
