@@ -144,7 +144,7 @@ class SPRouter(app_manager.RyuApp):
             self.adjacency[s1][s2] = port1
             self.adjacency[s2][s1] = port2  # This is the vice versa :D
 
-        for dpid_src, dpid_dst, src_port, dst_port in links:
+        for dpid_src, dpid_dst, src_port, dst_port in mylinks:
             self.network_topology[dpid_src][dpid_dst] = 1
 
         self.switch_mac_table = [{} for x in range(self.switch_count + 1)]
