@@ -164,7 +164,7 @@ class SPRouter(app_manager.RyuApp):
     def switch_features_handler(self, ev):
 
 
-        print "switch_features_handler is called"
+        print ("switch_features_handler is called")
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
