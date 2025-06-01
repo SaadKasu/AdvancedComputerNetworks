@@ -58,7 +58,7 @@ class SPRouter(app_manager.RyuApp):
         self.adjacency=defaultdict(lambda:defaultdict(lambda:None))
         self.switch_dpid_list = []
         self.global_mac_table = {}
-        self.switch_mac_table = []
+        self.switch_mac_table = [{} for x in range(len(self.topo_net.switches) + 1)]
         self.network_topology = {}
         self.found_paths = [[]]
         self.controller_mac ="0A:00:27:00:00:43"
@@ -75,7 +75,7 @@ class SPRouter(app_manager.RyuApp):
         Q = set(self.switch_dpid_list)
 
         while len(Q) > 0:
-            u = minimum_distance(distance, Q)
+            u = self.minimum_distance(distance, Q)
             Q.remove(u)
 
             for p in self.switch_dpid_list:
@@ -113,7 +113,7 @@ class SPRouter(app_manager.RyuApp):
         # print("The result is: ", r)
         return r
         
-    def minimum_distance(distance, Q):
+    def minimum_distance(self, distance, Q):
         min = float('Inf')
         node = 0
         for v in Q:
@@ -147,7 +147,7 @@ class SPRouter(app_manager.RyuApp):
         for dpid_src, dpid_dst, src_port, dst_port in mylinks:
             self.network_topology[dpid_src][dpid_dst] = 1
 
-        self.switch_mac_table = [{} for x in range(self.switch_count + 1)]
+        #self.switch_mac_table = [{} for x in range(self.switch_count + 1)]
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
