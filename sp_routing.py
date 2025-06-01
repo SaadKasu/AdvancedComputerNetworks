@@ -296,6 +296,12 @@ class SPRouter(app_manager.RyuApp):
                 return
             if src in self.switch_mac_table[datapath.id].keys():
                 if arp_tpa in self.switch_mac_table[datapath.id][src]:
+                    if msg.buffer_id == ofp.OFP_NO_BUFFER:
+                        data = msg.data
+                    out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port,
+                                              actions=actions,
+                                              data=data)
+                    datapath.send_msg(out)
                     return
 
                 else:
@@ -322,6 +328,8 @@ class SPRouter(app_manager.RyuApp):
         shortest_path_route = ""
         for z in p:
             shortest_path_route += str(z[0]) + "-"
+
+        print ("\n Shortest Path for src_mac-",src_mac," dst mac- ",dst_mac," is - ",shortest_path_route)
 
         msg = ev.msg
         datapath = msg.datapath
