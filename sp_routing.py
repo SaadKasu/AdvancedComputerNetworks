@@ -259,7 +259,7 @@ class SPRouter(app_manager.RyuApp):
             out_port = ofp.OFPP_FLOOD
 
         actions = [parser.OFPActionOutput(out_port)]
-        if out_port != ofproto.OFPP_FLOOD:
+        if out_port != ofp.OFPP_FLOOD:
             match = parser.OFPMatch(in_port=in_port, eth_src=src, eth_dst=dst)
             self.add_flow(datapath, 1, matchFlow, actions)
         data = None
