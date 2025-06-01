@@ -235,7 +235,7 @@ class SPRouter(app_manager.RyuApp):
         #  This mac "01:80:c2:00:00:0e" is my controller mac address which is automatically added in the match field of another table-miss flow in each switch. It is added by the option
         #  "--observe-links" in the beginning of ruunning the controller. This option is mandatory to find the topology using RYU api.
         if eth.ethertype == ether_types.ETH_TYPE_ARP: #and dst_mac != "0A:00:27:00:00:17"
-            #self.handle_arp(datapath, pkt, src_mac, dst_mac, in_port, msg)
+            self.handle_arp(datapath, pkt, src_mac, dst_mac, in_port, msg)
             return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
