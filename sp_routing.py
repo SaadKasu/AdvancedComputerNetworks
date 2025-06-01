@@ -355,7 +355,7 @@ class SPRouter(app_manager.RyuApp):
             match = parser.OFPMatch(in_port=in_port, eth_src=src_mac,eth_dst=dst_mac)
             #matchFlow = parser.OFPMatch(in_port=in_port,eth_dst=dst_mac)
             actions = [parser.OFPActionOutput(out_port)]
-            datapath = self.datapath_list[int(sw) - 1]
+            datapath = self.datapath_list[int(sw)]
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
                 datapath=datapath, match=match, priority=1, instructions=inst)
