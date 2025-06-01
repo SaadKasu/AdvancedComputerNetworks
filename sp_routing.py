@@ -235,7 +235,6 @@ class SPRouter(app_manager.RyuApp):
             self.install_path(p, ev, src_mac, dst_mac)
                 # this will be the output port for this switch to redirect the packets to the desired destination
             out_port = p[0][2]
-            return
 
         else:
             # when the dst isn't found then it shall be flooded to all output ports
