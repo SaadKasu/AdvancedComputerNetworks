@@ -337,7 +337,7 @@ class SPRouter(app_manager.RyuApp):
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
                 datapath=datapath, match=match, priority=1, instructions=inst)
-            self.add_flow(datapath, 0, match, actions)
+            #self.add_flow(datapath, 0, match, actions)
             datapath.send_msg(mod)
 """
         for sw, in_port, out_port in reversed(p):
