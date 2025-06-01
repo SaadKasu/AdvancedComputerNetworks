@@ -230,11 +230,11 @@ class SPRouter(app_manager.RyuApp):
             p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1], self.global_mac_table[dst_mac][1])
 
             if p not in self.found_paths:
-                print("\n Inside Found Paths Method - Src Mac -",src_mac, " DST Mac - ", dst_mac)
                 self.found_paths.append(p)
                 self.install_path(p, ev, src_mac, dst_mac)
                 # this will be the output port for this switch to redirect the packets to the desired destination
                 out_port = p[0][2]
+                return
             else:
                 out_port = p[0][2]
 
@@ -337,5 +337,13 @@ class SPRouter(app_manager.RyuApp):
             datapath = self.datapath_list[int(sw)]
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
-                datapath=datapath, match=match, idle_timeout=10, hard_timeout=0, priority=1, instructions=inst)
+                datapath=datapath, match=match, priority=1, instructions=inst)
             datapath.send_msg(mod)
+
+        for sw, in_port, out_port in reversed(p):
+            match = parser.OFPMatch(in_port=out_port, eth_src=dst_mac, eth_dst=src_mac)
+            actions = [parser.OFPActionOutput(in_port)]
+            datapath = self.datapath_list[int(sw)]
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+            mod = datapath.ofproto_parser.OFPFlowMod(
+                datapath=datapath, match=match, priority=1, instructions=inst)
