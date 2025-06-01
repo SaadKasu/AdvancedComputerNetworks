@@ -94,7 +94,7 @@ class FattreeNet(Topo):
                 dp_id = str(core_switch + aggr_switch + edge_switch)
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
-                ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1"
+                ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
                 dpid = dp_id)
                 self.name_dpId_map[switch.id] = dp_id
                 aggr_switch += 1
