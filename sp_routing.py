@@ -73,7 +73,7 @@ class SPRouter(app_manager.RyuApp):
             previous[dpid] = None
         distance[src] = 0
         Q = set(self.switch_dpid_list)
-        print("\nDP ID List - ", Q)
+        #print("\nDP ID List - ", Q)
 
         while len(Q) > 0:
             u = self.minimum_distance(distance, Q)
@@ -113,7 +113,7 @@ class SPRouter(app_manager.RyuApp):
             r.append((s1, in_port, out_port))
             in_port = self.adjacency[s2][s1]
         r.append((dst, in_port, final_port))
-        print("The result is: ", r)
+        print("\nThe result is: ", r, " For src - ",src, " For dst - ",dst)
         return r
         
     def minimum_distance(self, distance, Q):
@@ -227,6 +227,7 @@ class SPRouter(app_manager.RyuApp):
             self.global_mac_table[src_mac] = (dpid, in_port)
 
         if dst_mac in self.global_mac_table.keys():
+            print("\n Src Mac - ", src_mac, " DST Mac - ",dst_mac)
             p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1], self.global_mac_table[dst_mac][1])
 
             if p not in self.found_paths:
@@ -338,8 +339,9 @@ class SPRouter(app_manager.RyuApp):
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
                 datapath=datapath, match=match, priority=1, instructions=inst)
+            self.add_flow(datapath, 0, match, actions)
             datapath.send_msg(mod)
-
+"""
         for sw, in_port, out_port in reversed(p):
             match = parser.OFPMatch(in_port=out_port, eth_src=dst_mac, eth_dst=src_mac)
             actions = [parser.OFPActionOutput(in_port)]
@@ -347,3 +349,4 @@ class SPRouter(app_manager.RyuApp):
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
                 datapath=datapath, match=match, priority=1, instructions=inst)
+"""
