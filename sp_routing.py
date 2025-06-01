@@ -265,6 +265,7 @@ class SPRouter(app_manager.RyuApp):
         arp_tpa = arp_pkt.dst_ip
 
         if arp_pkt.opcode == arp.ARP_REQUEST:  # check if it's an arp request
+            print("\nArp request src ip - ",arp_spa, " dst ip - ",arp_tpa)
             if arp_tpa == self.controller_ip:  # If a host sends an arp req for the controller ip, then this packet is for the controller
                 arp_reply = arp.arp(hwtype=1, proto=0x0800, hlen=6, plen=4, opcode=2,
                                     src_mac=self.controller_mac, src_ip=self.controller_ip,
