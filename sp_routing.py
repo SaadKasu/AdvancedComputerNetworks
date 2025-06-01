@@ -113,14 +113,14 @@ class SPRouter(app_manager.RyuApp):
             r.append((s1, in_port, out_port))
             in_port = self.adjacency[s2][s1]
         r.append((dst, in_port, final_port))
-        # print("The result is: ", r)
+        print("The result is: ", r)
         return r
         
     def minimum_distance(self, distance, Q):
         min = float('Inf')
         node = 0
         for v in Q:
-            if distance[v] < min:
+            if distance[v] <= min:
                 min = distance[v]
                 node = v
         return node
