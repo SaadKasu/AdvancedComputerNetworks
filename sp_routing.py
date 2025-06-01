@@ -77,9 +77,7 @@ class SPRouter(app_manager.RyuApp):
 
         while len(Q) > 0:
             u = self.minimum_distance(distance, Q)
-
-            if u in Q : 
-                Q.remove(u)
+            Q.remove(u)
 
             for p in self.switch_dpid_list:
                 if self.adjacency[u][p] != None:
@@ -139,6 +137,15 @@ class SPRouter(app_manager.RyuApp):
         for switch in self.switches:
             self.datapath_list[switch.dp.id] = switch.dp
 
+        for switch in self.switches:
+            self.network_topology[switch.dp.id] = {}
+            for switch2 in self.switches:
+                if switch2 not in self.network_topology.keys():
+                    self.network_topology[switch2.dp.id] = {}
+                self.network_topology[switch.dp.id][switch2.dp.id] = float('inf')
+                self.network_topology[switch2.dp.id][switch.dp.id] = float('inf')
+                self.network_topology[switch.dp.id][switch.dp.id] = 0
+
         mylinks = [(link.src.dpid, link.dst.dpid, link.src.port_no, link.dst.port_no) for link in links]
         for s1, s2, port1, port2 in mylinks:
             # If the direction of a link is: From source dpid to destination dpid ( let's
@@ -155,10 +162,24 @@ class SPRouter(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
+
+
+        print "switch_features_handler is called"
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-    
+        match = parser.OFPMatch()
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS ,actions)]
+        mod = datapath.ofproto_parser.OFPFlowMod(
+        datapath=datapath, match=match, cookie=0,
+        command=ofproto.OFPFC_ADD, idle_timeout=0, hard_timeout=0,priority=0, instructions=inst)
+        datapath.send_msg(mod)
+
+        datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+    """
         # Set initial values for all links to this switch to infinite
         self.network_topology[datapath.id] = {}
         self.switch_count += 1
@@ -175,8 +196,7 @@ class SPRouter(app_manager.RyuApp):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
-
+    """
 
     # Add a flow entry to the flow-table
     def add_flow(self, datapath, priority, match, actions):
@@ -215,7 +235,7 @@ class SPRouter(app_manager.RyuApp):
         #  This mac "01:80:c2:00:00:0e" is my controller mac address which is automatically added in the match field of another table-miss flow in each switch. It is added by the option
         #  "--observe-links" in the beginning of ruunning the controller. This option is mandatory to find the topology using RYU api.
         if eth.ethertype == ether_types.ETH_TYPE_ARP: #and dst_mac != "0A:00:27:00:00:17"
-            self.handle_arp(datapath, pkt, src_mac, dst_mac, in_port, msg)
+            #self.handle_arp(datapath, pkt, src_mac, dst_mac, in_port, msg)
             return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
@@ -229,21 +249,19 @@ class SPRouter(app_manager.RyuApp):
         if dst_mac in self.global_mac_table.keys():
             print("\n Src Mac - ", src_mac, " DST Mac - ",dst_mac)
             p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1], self.global_mac_table[dst_mac][1])
-
-            if p not in self.found_paths:
-                self.found_paths.append(p)
-                self.install_path(p, ev, src_mac, dst_mac)
+                #self.found_paths.append(p)
+            self.install_path(p, ev, src_mac, dst_mac)
                 # this will be the output port for this switch to redirect the packets to the desired destination
-                out_port = p[0][2]
-                return
-            else : 
-                out_port = p[0][2]
+            out_port = p[0][2]
 
         else:
             # when the dst isn't found then it shall be flooded to all output ports
             out_port = ofp.OFPP_FLOOD
 
         actions = [parser.OFPActionOutput(out_port)]
+        if out_port != ofproto.OFPP_FLOOD:
+            match = parser.OFPMatch(in_port=in_port, eth_src=src, eth_dst=dst)
+            self.add_flow(datapath, 1, matchFlow, actions)
         data = None
         if msg.buffer_id == ofp.OFP_NO_BUFFER:
             # Data is set due to no buffering
@@ -334,13 +352,13 @@ class SPRouter(app_manager.RyuApp):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         for sw, in_port, out_port in p:
-            match = parser.OFPMatch(in_port=in_port, eth_src=src_mac, eth_dst=dst_mac)
+            match = parser.OFPMatch(in_port=in_port, eth_src=src_mac,eth_dst=dst_mac)
+            #matchFlow = parser.OFPMatch(in_port=in_port,eth_dst=dst_mac)
             actions = [parser.OFPActionOutput(out_port)]
-            datapath = self.datapath_list[int(sw)]
+            datapath = self.datapath_list[int(sw) - 1]
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
             mod = datapath.ofproto_parser.OFPFlowMod(
                 datapath=datapath, match=match, priority=1, instructions=inst)
-            #self.add_flow(datapath, 0, match, actions)
             datapath.send_msg(mod)
 """
         for sw, in_port, out_port in reversed(p):
