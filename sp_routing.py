@@ -224,7 +224,7 @@ class SPRouter(app_manager.RyuApp):
             self.global_mac_table[src_mac] = (dpid, in_port)
 
         if dst_mac in self.global_mac_table.keys():
-            p = dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1],
+            p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1],
                          self.global_mac_table[dst_mac][1])
 
             if p not in self.found_paths:
