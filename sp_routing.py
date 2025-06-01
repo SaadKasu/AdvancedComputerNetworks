@@ -64,7 +64,7 @@ class SPRouter(app_manager.RyuApp):
         self.controller_mac ="0A:00:27:00:00:43"
         self.controller_ip = "127.0.0.1"
 
-    def dijkstra(src, dst, first_port, final_port):
+    def dijkstra(self, src, dst, first_port, final_port):
 
         distance = {}
         previous = {}
@@ -224,8 +224,7 @@ class SPRouter(app_manager.RyuApp):
             self.global_mac_table[src_mac] = (dpid, in_port)
 
         if dst_mac in self.global_mac_table.keys():
-            p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1],
-                         self.global_mac_table[dst_mac][1])
+            p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1], self.global_mac_table[dst_mac][1])
 
             if p not in self.found_paths:
                 self.found_paths.append(p)
@@ -281,7 +280,7 @@ class SPRouter(app_manager.RyuApp):
                                           data=arp_reply_pkt.data)
                 datapath.send_msg(out)
                 return
-            print("\n Data path - %s",datapath,"\n Datapath id - %s", datapath.id, "\n Map - %s", self.switch_mac_table)
+            #print("\n Data path - %s",datapath,"\n Datapath id - %s", datapath.id, "\n Map - %s", self.switch_mac_table)
             #self.logger.info("\n Map with Key - %s",self.switch_mac_table[datapath.id], "\n Keys - %s",self.switch_mac_table[datapath.id].keys())
             if src not in self.switch_mac_table[datapath.id].keys():
                 self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)  # Updating mac table of this 
