@@ -77,8 +77,9 @@ class SPRouter(app_manager.RyuApp):
 
         while len(Q) > 0:
             u = self.minimum_distance(distance, Q)
-            print("\nU - ", u)
-            Q.remove(u)
+            #print("\nU - ", u)
+            if u in Q : 
+                Q.remove(u)
 
             for p in self.switch_dpid_list:
                 if self.adjacency[u][p] != None:
@@ -282,7 +283,7 @@ class SPRouter(app_manager.RyuApp):
                                           data=arp_reply_pkt.data)
                 datapath.send_msg(out)
                 return
-            print("\n Data path - ",datapath,"\n Datapath id -", datapath.id, "\n Map len-", len(self.switch_mac_table), "\n Map - ", self.switch_mac_table)
+            #print("\n Data path - ",datapath,"\n Datapath id -", datapath.id, "\n Map len-", len(self.switch_mac_table), "\n Map - ", self.switch_mac_table)
             #self.logger.info("\n Map with Key - %s",self.switch_mac_table[datapath.id], "\n Keys - %s",self.switch_mac_table[datapath.id].keys())
             if datapath.id not in self.switch_mac_table.keys() :
                 self.switch_mac_table[datapath.id] = {}
