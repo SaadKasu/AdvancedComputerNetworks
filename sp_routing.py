@@ -58,7 +58,7 @@ class SPRouter(app_manager.RyuApp):
         self.adjacency=defaultdict(lambda:defaultdict(lambda:None))
         self.switch_dpid_list = []
         self.global_mac_table = {}
-        self.switch_mac_table = [{} for x in range(len(self.topo_net.switches) + 1)]
+        self.switch_mac_table = {}
         self.network_topology = {}
         self.found_paths = [[]]
         self.controller_mac ="0A:00:27:00:00:43"
@@ -73,9 +73,11 @@ class SPRouter(app_manager.RyuApp):
             previous[dpid] = None
         distance[src] = 0
         Q = set(self.switch_dpid_list)
+        print("\nDP ID List - ", Q)
 
         while len(Q) > 0:
             u = self.minimum_distance(distance, Q)
+            print("\nU - ", u)
             Q.remove(u)
 
             for p in self.switch_dpid_list:
