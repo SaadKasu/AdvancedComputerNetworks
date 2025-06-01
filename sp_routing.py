@@ -284,7 +284,9 @@ class SPRouter(app_manager.RyuApp):
                 return
             print("\n Data path - ",datapath,"\n Datapath id -", datapath.id, "\n Map len-", len(self.switch_mac_table), "\n Map - ", self.switch_mac_table)
             #self.logger.info("\n Map with Key - %s",self.switch_mac_table[datapath.id], "\n Keys - %s",self.switch_mac_table[datapath.id].keys())
-            if datapath.id in self.switch_mac_table.keys() or src not in self.switch_mac_table[datapath.id].keys():
+            if datapath.id in self.switch_mac_table.keys() :
+                self.switch_mac_table[datapath.id] = {}
+            if src not in self.switch_mac_table[datapath.id].keys():
                 self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)  # Updating mac table of this 
                 if msg.buffer_id == ofp.OFP_NO_BUFFER:
                     data = msg.data
@@ -292,7 +294,7 @@ class SPRouter(app_manager.RyuApp):
                                           data=data)
                 datapath.send_msg(out)
                 return
-            if datapath.id in self.switch_mac_table.keys() and src in self.switch_mac_table[datapath.id].keys():
+            if src in self.switch_mac_table[datapath.id].keys():
                 if arp_tpa in self.switch_mac_table[datapath.id][src]:
                     return
 
