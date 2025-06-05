@@ -35,6 +35,7 @@ import heapq
 from ryu.topology import event, switches
 from ryu.topology.api import get_switch, get_link
 from ryu.app.wsgi import ControllerBase
+from ryu.lib.packet import ether_types
 
 import topo
 
