@@ -267,7 +267,7 @@ class SPRouter(app_manager.RyuApp):
 
         if dst_ip in self.arp_table:
         # We know the MAC: send ARP reply directly
-            self.send_arp_reply(datapath, in_port, eth, arp_pkt)
+            self.handle_arp_reply(datapath, in_port, eth, arp_pkt)
         else:
             # Unknown: flood request to all edge switches
             self.flood_arp(datapath, eth, arp_pkt)
