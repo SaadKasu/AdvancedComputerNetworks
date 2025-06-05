@@ -60,16 +60,16 @@ class SPRouter(app_manager.RyuApp):
         links = get_link(self, None)
 
         for switch in switches :
-            self.dpid_neighbours.setdefault(switch.dp.id, {})
+            self.dpid_neighbours.setdefault(switch.dp.id, [])
 
         for link in links:
             src = link.src
             dst = link.dst
     
-            if src.dpid not in self.dpid_neighbours[dst.dpid]:
+            if src.dpid not in self.dpid_neighbours[dst.dpid][0]:
                 self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
             
-            if dst.dpid not in self.dpid_neighbours[src.dpid]:
+            if dst.dpid not in self.dpid_neighbours[src.dpid][0]:
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
         for switch in switches:
