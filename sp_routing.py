@@ -81,6 +81,10 @@ class SPRouter(app_manager.RyuApp):
             #Call dijkstra
             self.dijkstra(switch.dp.id, switches)
 
+        for switch_src in switches :
+            for switch_dst in switches :    
+                print("Path between - ",switch_src.dp.id, " and Destination - ",switch_dst.dp.id, " is - ",self.path_between_switches[switch_src.dp.id][switch_dst.dp.id])
+
     def dijkstra(self, source, switches):
         dist = {}
         prev = {}
@@ -114,7 +118,6 @@ class SPRouter(app_manager.RyuApp):
                     previousNode = prev[dest]
 
             self.path_between_switches[source][switch.dp.id] = path
-            print("Path between - ",source, " and Destination - ",switch.dp.id, " is - ",path)
         
     
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
