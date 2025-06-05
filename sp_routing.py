@@ -74,7 +74,7 @@ class SPRouter(app_manager.RyuApp):
 
         for switch in switches:
             self.path_between_switches.setdefault(switch.dp.id,{})
-            self.distance_between_switches.setdefault(switch.dp.id, {switch2.dp.id : float('inf') for switch2.dp.id ind switches})
+            self.distance_between_switches.setdefault(switch.dp.id, {switch2.dp.id : float('inf') for switch2.dp.id in switches})
             #Call dijkstra
             self.dijkstra(switch.dp.id, switches)
 
