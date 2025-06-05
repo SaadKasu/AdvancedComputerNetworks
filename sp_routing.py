@@ -72,12 +72,12 @@ class SPRouter(app_manager.RyuApp):
             dst = link.dst
 
             if dst.dpid not in self.switch_without_hosts :
-                self.switch_without_hosts[dst.dpid] = []
+                self.switch_without_hosts[dst.dpid] = set()
             if src.dpid not in self.switch_without_hosts :
-                self.switch_without_hosts[src.dpid] = []
+                self.switch_without_hosts[src.dpid] = set()
 
-            self.switch_without_hosts[dst.dpid].append(dst.port_no)
-            self.switch_without_hosts[dst.dpid].append(src.port_no)
+            self.switch_without_hosts[dst.dpid].add(dst.port_no)
+            self.switch_without_hosts[dst.dpid].add(src.port_no)
     
             if src.dpid not in self.dpid_neighbours[dst.dpid]:
                 self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
@@ -317,7 +317,7 @@ class SPRouter(app_manager.RyuApp):
 
         for key in self.switch_without_hosts :
             values = self.switch_without_hosts[key]
-            print("\nValues - ",values)
+            print("\nValues - ",values, " For DPID - ", key)
             if len(values) < 4 : 
                 dp = self.switch_datapath[key]
                 for port in range(1, 5):  # adjust based on your topology
