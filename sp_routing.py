@@ -99,7 +99,7 @@ class SPRouter(app_manager.RyuApp):
     def dijkstra(self, source, destination):
         dist = {}
         prev = {}
-        for switch in switches :
+        for switch in self.switches :
             dist[switch.dp.id] = float('inf')
             prev[switch.dp.id] = (None,None)
         dist[source] = 0
@@ -317,6 +317,7 @@ class SPRouter(app_manager.RyuApp):
 
         for key in self.switch_without_hosts :
             values = self.switch_without_hosts[key]
+            print("\nValues - ",values)
             if len(values) < 4 : 
                 dp = self.switch_datapath[key]
                 for port in range(1, 5):  # adjust based on your topology
