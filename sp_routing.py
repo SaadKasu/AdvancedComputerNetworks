@@ -318,7 +318,7 @@ class SPRouter(app_manager.RyuApp):
         for key in self.switch_without_hosts :
             values = self.switch_without_hosts[key]
             if len(values) < 4 : 
-                dp = self.switch_datapath(key)
+                dp = self.switch_datapath[key]
                 for port in range(1, 5):  # adjust based on your topology
                     if port not in values : 
                         print("\nHost on port - ", port, " Switch id - ", key)
