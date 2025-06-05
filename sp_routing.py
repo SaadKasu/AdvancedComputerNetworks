@@ -221,8 +221,8 @@ class SPRouter(app_manager.RyuApp):
 
         else : 
             print(" Has out put port")
-            dst_sw = self.ip_datapath[src][0]
-            dst_port = self.ip_datapath[src][1]
+            dst_sw = self.ip_datapath[dst][0]
+            dst_port = self.ip_datapath[dst][1]
             src_sw = dpid
             src_port = in_port
 
