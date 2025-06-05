@@ -272,7 +272,7 @@ class SPRouter(app_manager.RyuApp):
             # Unknown: flood request to all edge switches
             self.flood_arp(datapath, eth, arp_pkt)
 
-    def send_arp_reply(self, datapath, in_port, eth, arp_pkt):
+    def handle_arp_reply(self, datapath, in_port, eth, arp_pkt):
         dst_mac = eth.src
         src_mac = self.arp_table[arp_pkt.dst_ip]
 
