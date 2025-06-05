@@ -53,7 +53,7 @@ class SPRouter(app_manager.RyuApp):
         self.switches = []
         self.links = []
         self.arp_table = {}
-        self.switch_without_hosts = []
+        self.switch_without_hosts = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
@@ -70,12 +70,12 @@ class SPRouter(app_manager.RyuApp):
         for link in self.links:
             src = link.src
             dst = link.dst
-            """
+
             if dst.dpid not in self.switch_without_hosts :
                 self.switch_without_hosts[dst.dpid] = []
             if src.dpid not in self.switch_without_hosts :
                 self.switch_without_hosts[src.dpid] = []
-"""
+
             self.switch_without_hosts[dst.dpid].append(dst.port_no)
             self.switch_without_hosts[dst.dpid].append(src.port_no)
     
