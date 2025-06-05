@@ -60,16 +60,16 @@ class SPRouter(app_manager.RyuApp):
         links = get_link(self, None)
 
         for switch in switches :
-            self.dpid_neighbours.setdefault(switch.dp.id, [])
+            self.dpid_neighbours.setdefault(switch.dp.id, {})
 
         for link in links:
             src = link.src
             dst = link.dst
     
-            if src.dpid not in self.dpid_neighbours[dst.dpid][0]:
+            if src.dpid not in self.dpid_neighbours[dst.dpid]:
                 self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
             
-            if dst.dpid not in self.dpid_neighbours[src.dpid][0]:
+            if dst.dpid not in self.dpid_neighbours[src.dpid]:
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
         for switch in switches:
@@ -94,11 +94,11 @@ class SPRouter(app_manager.RyuApp):
             cost, u = heapq.heappop(queue)
             visitedNodes.append(u)
             self.distance_between_switches[source][u] = dist[u]
-            for neighbour, port in self.dpid_neighbours[u]:
+            for neighbour in self.dpid_neighbours[u]:
                 nextDist = dist[u] + 1
                 if nextDist < dist[neighbour] and neighbour not in visitedNodes :
                     dist[neighbour] = nextDist
-                    prev[neighbour] = (u, port)
+                    prev[neighbour] = (u, self.dpid_neighbours[u][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
 
         for switch in switches :
