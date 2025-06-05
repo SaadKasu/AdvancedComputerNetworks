@@ -109,7 +109,8 @@ class SPRouter(app_manager.RyuApp):
             while dest is not None :
                 path.insert(0, previousNode)
                 dest = prev[dest][0]
-                previousNode = prev[dest]
+                if dest is not None : 
+                    previousNode = prev[dest]
 
             self.path_between_switches[source][switch.dp.id] = path
             print("Path between - ",source, " and Destination - ",switch.dp.id, " is - ",path)
