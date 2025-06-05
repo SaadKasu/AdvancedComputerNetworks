@@ -50,6 +50,8 @@ class SPRouter(app_manager.RyuApp):
         self.dpid_neighbours = {}
         self.distance_between_switches = {}
         self.path_between_switches = {}
+        self.ip_datapath = {}
+        self.switch_datapath = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
@@ -58,9 +60,11 @@ class SPRouter(app_manager.RyuApp):
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
+        self.switch_datapath.setdefault = {}
 
         for switch in switches :
             self.dpid_neighbours.setdefault(switch.dp.id, {})
+            self.switch_datapath[switch.dp.id] = switch.dp
 
         for link in links:
             src = link.src
@@ -148,5 +152,85 @@ class SPRouter(app_manager.RyuApp):
         dpid = datapath.id
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        pkt = packet.Packet(msg.data)
+        eth = pkt.get_protocol(ethernet.ethernet)
+        in_port = msg.match['in_port']
+        src = ""
+        dst = ""
+        prot_pkt = ""
 
-        # TODO: handle new packets at the controller
+        if eth.ethertype == ether_types.ETH_TYPE_ARP:
+            prot_pkt = pkt.get_protocol(arp.arp)
+            src = prot_pkt.src_ip  # getting the src ip address of the arp request
+            dst = prot_pkt.dst_ip
+
+        if eth.ethertype == ether_types.ETH_TYPE_IP:
+            prot_pkt = pkt.get_protocol(ipv4.ipv4)
+            src = prot_pkt.src
+            dst = prot_pkt.dst
+            
+        if src not in ip_datapath :
+            self.ip_datapath[src]= (dpid, in_port)
+
+        if eth.ethertype == ether_types.ETH_TYPE_ARP:
+            #self.handle_arp(datapath, pkt, in_port, eth)
+
+        if eth.ethertype == ether_types.ETH_TYPE_IP:
+            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port)
+
+    def handle_ip(self,dpid, pkt, in_port):
+
+        src = pkt.src
+        dst = pkt.dst
+
+        
+        self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
+
+        if dst not in ip_datapath :
+            out_port = ofp.OFPP_FLOOD
+            actions = [parser.OFPActionOutput(out_port)]
+            data = None
+            if msg.buffer_id == ofp.OFP_NO_BUFFER:
+            # Data is set due to no buffering
+                data = msg.data
+            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
+            datapath.send_msg(out)
+
+
+        else : 
+
+            dst_sw = self.ip_datapath[src][0]
+            dst_port = self.ip_datapath[src][1]
+            src_sw = dpid
+            src_port = in_port
+
+            path = self.path_between_switches[src_sw][dst_sw]
+            
+            
+            for sw_dpid, port in path :
+                datapath = self.switch_datapath[sw_dpid]
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
+                actions = [parser.OFPActionOutput(port)]
+                self.add_flow(datapath, 0, match, actions)
+
+
+            datapath = self.switch_datapath[dst_sw]
+            match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
+            actions = [parser.OFPActionOutput(dst_port)]
+            self.add_flow(datapath, 0, match, actions)
+            
+
+        
+
+    def handle_arp(self, datapath, pkt, in_port, eth):
+
+        arp_pkt = pkt.get_protocol(arp.arp) 
+
+        arp_pkt = pkt.get_protocol(arp.arp)
+                
+        self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+
+        if arp_pkt.opcode == arp.ARP_REQUEST : 
+            self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
+        else : 
+            self.handle_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
