@@ -315,7 +315,7 @@ class SPRouter(app_manager.RyuApp):
 
         pkt.serialize()
 
-        for key, value in self.switch_without_hosts :
+        for key, value[] in self.switch_without_hosts :
             if len(value) < 4 : 
                 dp = self.switch_datapath(key)
                 for port in range(1, 5):  # adjust based on your topology
