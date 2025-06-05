@@ -50,30 +50,42 @@ class SPRouter(app_manager.RyuApp):
         self.path_between_switches = {}
         self.ip_datapath = {}
         self.switch_datapath = {}
+        self.switches = []
+        self.links = []
+        self.arp_table = {}
+        self.switch_without_hosts = []
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
 
         # Switches and links in the network
-        switches = get_switch(self, None)
-        links = get_link(self, None)
+        self.switches = get_switch(self, None)
+        self.links = get_link(self, None)
 
-        for switch in switches :
+        for switch in self.switches :
             self.dpid_neighbours.setdefault(switch.dp.id, {})
             self.switch_datapath[switch.dp.id] = switch.dp
 
-        for link in links:
+        for link in self.links:
             src = link.src
             dst = link.dst
+            
+            if dst.dpid not in self.switch_without_hosts :
+                self.switch_without_hosts[dst.dpid] = []
+            if src.dpid not in self.switch_without_hosts :
+                self.switch_without_hosts[src.dpid] = []
+
+            self.switch_without_hosts[dst.dpid].append(dst.port_no)
+            self.switch_without_hosts[dst.dpid].append(src.port_no)
     
             if src.dpid not in self.dpid_neighbours[dst.dpid]:
                 self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
             
             if dst.dpid not in self.dpid_neighbours[src.dpid]:
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
-
-        for switch in switches:
+                """
+        for switch in self.switches:
             self.path_between_switches[switch.dp.id] = {}
             self.distance_between_switches[switch.dp.id] = {}
 
@@ -82,8 +94,9 @@ class SPRouter(app_manager.RyuApp):
         for switch_src in switches :
             for switch_dst in switches :    
                 print("Path between - ",switch_src.dp.id, " and Destination - ",switch_dst.dp.id, " is - ",self.path_between_switches[switch_src.dp.id][switch_dst.dp.id])
+        """
 
-    def dijkstra(self, source, switches):
+    def dijkstra(self, source, destination):
         dist = {}
         prev = {}
         for switch in switches :
@@ -92,30 +105,32 @@ class SPRouter(app_manager.RyuApp):
         dist[source] = 0
         queue = [(0,source)]
         visitedNodes = []
-        
-        while queue : 
-            cost, u = heapq.heappop(queue)
-            visitedNodes.append(u)
-            self.distance_between_switches[source][u] = dist[u]
-            for neighbour in self.dpid_neighbours[u]:
-                nextDist = dist[u] + 1
+
+        poped_node = heapq.heappop(queue)
+        curr_dist = poped_node[0]
+        curr_switch = poped_node[1]
+        while curr_switch != destination: 
+            visitedNodes.append(curr_switch)
+            #self.distance_between_switches[source][curr_switch] = dist[curr_switch]
+            for neighbour in self.dpid_neighbours[curr_switch]:
+                nextDist = dist[curr_switch] + 1
                 if nextDist < dist[neighbour] and neighbour not in visitedNodes :
                     dist[neighbour] = nextDist
-                    prev[neighbour] = (u, self.dpid_neighbours[u][neighbour])
+                    prev[neighbour] = (curr_switch, self.dpid_neighbours[curr_switch][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
 
-        for switch in switches :
-            dest = switch.dp.id
-            path = []
-            previousNode = prev[dest]
-            self.path_between_switches[source].setdefault(dest,[])
-            while previousNode[0] is not None :
-                path.insert(0, previousNode)
-                dest = prev[dest][0]
-                if dest is not None : 
-                    previousNode = prev[dest]
+        path = []
+        previousNode = prev[destination]
+        #self.path_between_switches[source].setdefault(destination,[])
+        while previousNode[0] is not None :
+            path.insert(0, previousNode)
+            destination = prev[destination][0]
+            if destination is not None : 
+                previousNode = prev[destination]
 
-            self.path_between_switches[source][switch.dp.id] = path
+        return path
+
+        #self.path_between_switches[source][switch.dp.id] = path
         
     
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -167,13 +182,14 @@ class SPRouter(app_manager.RyuApp):
             src = prot_pkt.src
             dst = prot_pkt.dst
             
-        if src not in self.ip_datapath :
-            self.ip_datapath[src]= (dpid, in_port)
+        self.ip_datapath[src]= (dpid, in_port)
+        self.arp_table[src] = eth.src
 
         #print(" IP data path - ", self.ip_datapath)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             self.handle_arp(datapath, pkt, in_port, eth)
+            return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg)
@@ -210,36 +226,25 @@ class SPRouter(app_manager.RyuApp):
             src_sw = dpid
             src_port = in_port
 
-            path = self.path_between_switches[src_sw][dst_sw]
-            
+            path = dijkstra(src_sw, dst_sw)
+
+            print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
             for sw_dpid, port in path :
                 datapath = self.switch_datapath[sw_dpid]
                 ofproto = datapath.ofproto
                 parser = datapath.ofproto_parser
-                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst)
                 actions = [parser.OFPActionOutput(port)]
-                data = None
-                if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-                # Data is set due to no buffering
-                    data = msg.data
-                out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
-                datapath.send_msg(out)
-                self.add_flow(datapath, 0, match, actions)
+                self.add_flow(datapath, 10, match, actions)
 
 
             datapath = self.switch_datapath[dst_sw]
             ofproto = datapath.ofproto
             parser = datapath.ofproto_parser
-            match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
+            match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst)
             actions = [parser.OFPActionOutput(dst_port)]
-            data = None
-            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-            # Data is set due to no buffering
-                data = msg.data
-            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
-            datapath.send_msg(out)
-            self.add_flow(datapath, 0, match, actions)
+            self.add_flow(datapath, 10, match, actions)
             
 
         
@@ -247,46 +252,79 @@ class SPRouter(app_manager.RyuApp):
     def handle_arp(self, datapath, pkt, in_port, eth):
 
         arp_pkt = pkt.get_protocol(arp.arp) 
-
-        arp_pkt = pkt.get_protocol(arp.arp)
                 
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         if arp_pkt.opcode == arp.ARP_REQUEST : 
-            self.send_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
+            self.handle_arp_request(datapath, in_port, eth, arp_pkt)
+        elif arp_pkt.opcode == arp.ARP_REPLY:
+            self.handle_arp_reply(datapath, in_port, eth, arp_pkt)
 
 
-    def send_arp_reply(self, datapath, pkt, in_port, eth, arp_pkt):
+    def handle_arp_request(self, datapath, pkt, in_port, eth, arp_pkt):
 
-        self.logger.info("Inside The ARP if condition, Learn The Mac Of The Router")
-        
-        src_mac = '00:00:00:00:00:00'
-        src_ip = arp_pkt.dst_ip
-        dst_ip = arp_pkt.src_ip
+        dst_ip = arp_pkt.dst_ip
+
+        if dst_ip in self.arp_table:
+        # We know the MAC: send ARP reply directly
+            self.send_arp_reply(datapath, in_port, eth, arp_pkt)
+        else:
+            # Unknown: flood request to all edge switches
+            self.flood_arp(datapath, eth, arp_pkt)
+
+    def send_arp_reply(self, datapath, in_port, eth, arp_pkt):
         dst_mac = eth.src
-        dst = eth.src
-        src = src_mac
-        self.logger.info("ARP Reply src_mac : %s SRC IP : %s DST IP : %s DST Mac : %s SRC : %s DST : %s",src_mac, src_ip, dst_ip, dst_mac, src, dst)          
-        
-        arp_reply = packet.Packet()
-        arp_reply.add_protocol(ethernet.ethernet(
-            ethertype = eth.ethertype,
-            dst = dst_mac,
-            src = src_mac
-        ))
-        arp_reply.add_protocol(arp.arp(
-            opcode = arp.ARP_REPLY,
-            src_mac = src_mac,
-            src_ip = src_ip,
-            dst_mac = dst_mac,
-            dst_ip = dst_ip
-        ))
-        arp_reply.serialize()
+        src_mac = self.arp_table[arp_pkt.dst_ip]
 
-        parser = datapath.ofproto_parser
-        ofproto = datapath.ofproto
-        actions = [parser.OFPActionOutput(in_port)]
-        out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
-                                  actions=actions, data=arp_reply.data,
-                                  buffer_id=ofproto.OFP_NO_BUFFER)
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_ARP,
+            dst=dst_mac,
+            src=src_mac))
+        pkt.add_protocol(arp.arp(
+            opcode=arp.ARP_REPLY,
+            src_mac=src_mac,
+            src_ip=arp_pkt.dst_ip,
+            dst_mac=dst_mac,
+            dst_ip=arp_pkt.src_ip))
+
+        pkt.serialize()
+
+        actions = [datapath.ofproto_parser.OFPActionOutput(in_port)]
+        out = datapath.ofproto_parser.OFPPacketOut(
+            datapath=datapath,
+            in_port=datapath.ofproto.OFPP_CONTROLLER,
+            buffer_id=datapath.ofproto.OFP_NO_BUFFER,
+            actions=actions,
+            data=pkt.data)
         datapath.send_msg(out)
+
+
+    def flood_arp(self, datapath, eth, arp_pkt):
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_ARP,
+            dst='ff:ff:ff:ff:ff:ff',
+            src=eth.src))
+        pkt.add_protocol(arp.arp(
+            opcode=arp.ARP_REQUEST,
+            src_mac=eth.src,
+            src_ip=arp_pkt.src_ip,
+            dst_mac='00:00:00:00:00:00',
+            dst_ip=arp_pkt.dst_ip))
+
+        pkt.serialize()
+
+        for key, value in self.switch_without_hosts :
+            if len(value) < 4 : 
+                dp = self.switch_datapath(key)
+                for port in range(1, 5):  # adjust based on your topology
+                    if port not in value : 
+                        actions = [dp.ofproto_parser.OFPActionOutput(port)]
+                        out = dp.ofproto_parser.OFPPacketOut(
+                            datapath=dp,
+                            in_port=dp.ofproto.OFPP_CONTROLLER,
+                            buffer_id=dp.ofproto.OFP_NO_BUFFER,
+                            actions=actions,
+                            data=pkt.data)
+                        dp.send_msg(out)
