@@ -79,12 +79,6 @@ class SPRouter(app_manager.RyuApp):
 
             self.dijkstra(switch.dp.id, switches)
 
-        for switch in switches :
-            print("\nSwitch - ", switch)
-
-        for  link in links :
-            print("\n Link - ",link)
-
         for switch_src in switches :
             for switch_dst in switches :    
                 print("Path between - ",switch_src.dp.id, " and Destination - ",switch_dst.dp.id, " is - ",self.path_between_switches[switch_src.dp.id][switch_dst.dp.id])
