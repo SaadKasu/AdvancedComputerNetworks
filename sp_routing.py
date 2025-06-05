@@ -167,7 +167,7 @@ class SPRouter(app_manager.RyuApp):
             src = prot_pkt.src
             dst = prot_pkt.dst
             
-        if src not in ip_datapath :
+        if src not in self.ip_datapath :
             self.ip_datapath[src]= (dpid, in_port)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
