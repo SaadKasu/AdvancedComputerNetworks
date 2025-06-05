@@ -187,6 +187,7 @@ class SPRouter(app_manager.RyuApp):
         self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
     
         if dst not in self.ip_datapath :
+            """
             datapath = self.switch_datapath[dpid]
             ofproto = datapath.ofproto
             parser = datapath.ofproto_parser
@@ -198,6 +199,8 @@ class SPRouter(app_manager.RyuApp):
                 data = msg.data
             out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
             datapath.send_msg(out)
+            """
+            return
 
 
         else : 
@@ -212,12 +215,17 @@ class SPRouter(app_manager.RyuApp):
             
             for sw_dpid, port in path :
                 datapath = self.switch_datapath[sw_dpid]
+                ofproto = datapath.ofproto
+                parser = datapath.ofproto_parser
                 match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
                 actions = [parser.OFPActionOutput(port)]
+            
                 self.add_flow(datapath, 0, match, actions)
 
 
             datapath = self.switch_datapath[dst_sw]
+            ofproto = datapath.ofproto
+            parser = datapath.ofproto_parser
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
             actions = [parser.OFPActionOutput(dst_port)]
             self.add_flow(datapath, 0, match, actions)
