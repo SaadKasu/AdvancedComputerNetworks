@@ -170,8 +170,8 @@ class SPRouter(app_manager.RyuApp):
             self.ip_datapath[src]= (dpid, in_port)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
+            self.handle_arp(datapath, pkt, in_port, eth)
             return
-            #self.handle_arp(datapath, pkt, in_port, eth)
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port)
@@ -229,6 +229,8 @@ class SPRouter(app_manager.RyuApp):
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         if arp_pkt.opcode == arp.ARP_REQUEST : 
-            self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
+            return
+            #self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
         else : 
-            self.handle_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
+            return
+            #self.handle_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
