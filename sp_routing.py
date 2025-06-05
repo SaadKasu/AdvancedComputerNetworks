@@ -58,7 +58,6 @@ class SPRouter(app_manager.RyuApp):
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
-        self.switch_datapath.setdefault({})
 
         for switch in switches :
             self.dpid_neighbours.setdefault(switch.dp.id, {})
