@@ -60,7 +60,7 @@ class SPRouter(app_manager.RyuApp):
         links = get_link(self, None)
 
         for switch in switches :
-            self.dpid_neighbours.setdefault(switch.dpid, {})
+            self.dpid_neighbours.setdefault(switch.dp.id, {})
 
         for link in links:
             src = link.src
@@ -73,19 +73,19 @@ class SPRouter(app_manager.RyuApp):
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
         for switch in switches:
-            self.path_between_switches.setdefault(switch.dpid,{})
-            self.distance_between_switches.setdefault(switch.dpid,{})
+            self.path_between_switches.setdefault(switch.dp.id,{})
+            self.distance_between_switches.setdefault(switch.dp.id,{})
             for switch2 in switches:
-                self.distance_between_switches[switch.dpid][switch2.dpid] = float('inf')
+                self.distance_between_switches[switch.dp.id][switch2.dp.id] = float('inf')
             #Call dijkstra
-            self.dijkstra(switch.dpid, switches)
+            self.dijkstra(switch.dp.id, switches)
 
     def dijkstra(self, source, switches):
         dist = {}
         prev = {}
         for switch in switches :
-            dist[switch.dpid] = float('inf')
-            prev[switch.dpid] = (None,None)
+            dist[switch.dp.id] = float('inf')
+            prev[switch.dp.id] = (None,None)
         dist[source] = 0
         queue = [(0,source)]
         visitedNodes = []
@@ -101,8 +101,8 @@ class SPRouter(app_manager.RyuApp):
                     prev[neighbour] = (u, port)
                     heapq.heappush(queue, (nextDist, neighbour))
 
-        for switch.dpid in switches :
-            dest = switch.dpid
+        for switch in switches :
+            dest = switch.dp.id
             path = []
             previousNode = prev[dest]
             self.path_between_switches[source].setdefault(dest,[])
@@ -110,8 +110,8 @@ class SPRouter(app_manager.RyuApp):
                 path.insert(0, previousNode)
                 dest = prev[dest][0]
 
-            self.path_between_switches[source][switch.dpid] = path
-            print("Path between - ",source, " and Destination - ",switch.dpid, " is - ",path)
+            self.path_between_switches[source][switch.dp.id] = path
+            print("Path between - ",source, " and Destination - ",switch.dp.id, " is - ",path)
         
     
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
