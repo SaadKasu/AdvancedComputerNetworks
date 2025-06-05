@@ -174,6 +174,7 @@ class SPRouter(app_manager.RyuApp):
             self.ip_datapath[src]= (dpid, in_port)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
+            return
             #self.handle_arp(datapath, pkt, in_port, eth)
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
