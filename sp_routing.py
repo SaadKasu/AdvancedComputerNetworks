@@ -176,21 +176,24 @@ class SPRouter(app_manager.RyuApp):
             self.handle_arp(datapath, pkt, in_port, eth)
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
-            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port)
+            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg)
 
-    def handle_ip(self,dpid, pkt, in_port):
+    def handle_ip(self,dpid, pkt, in_port, msg):
 
         src = pkt.src
         dst = pkt.dst
 
         
         self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
-
+    
         if dst not in self.ip_datapath :
-            out_port = ofp.OFPP_FLOOD
+            datapath = self.switch_datapath[dpid]
+            ofproto = datapath.ofproto
+            parser = datapath.ofproto_parser
+            out_port = ofproto.OFPP_FLOOD
             actions = [parser.OFPActionOutput(out_port)]
             data = None
-            if msg.buffer_id == ofp.OFP_NO_BUFFER:
+            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
             # Data is set due to no buffering
                 data = msg.data
             out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
