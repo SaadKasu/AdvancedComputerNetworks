@@ -31,13 +31,10 @@ from ryu.lib.mac import haddr_to_bin
 from ryu.lib.packet import packet
 from ryu.lib.packet import ipv4
 from ryu.lib.packet import arp
-from ryu.lib.packet import ethernet
-from ryu.lib.packet import ether_types
-from ryu.lib import mac
+import heapq
 from ryu.topology import event, switches
 from ryu.topology.api import get_switch, get_link
 from ryu.app.wsgi import ControllerBase
-from collections import defaultdict
 
 import topo
 
@@ -50,153 +47,80 @@ class SPRouter(app_manager.RyuApp):
         
         # Initialize the topology with #ports=4
         self.topo_net = topo.Fattree(4)
-        self.switches = []
-        self.mac_switch_port_map = {}
-        self.datapath_list = {} #Save datapath contents of a switch
-        self.switch_count = 0
-
-        self.adjacency=defaultdict(lambda:defaultdict(lambda:None))
-        self.switch_dpid_list = []
-        self.global_mac_table = {}
-        self.switch_mac_table = {}
-        self.network_topology = {}
-        self.found_paths = [[]]
-        self.controller_mac ="0A:00:27:00:00:43"
-        self.controller_ip = "127.0.0.1"
-
-    def dijkstra(self, src, dst, first_port, final_port):
-
-        distance = {}
-        previous = {}
-        for dpid in self.switch_dpid_list:
-            distance[dpid] = float('Inf')
-            previous[dpid] = None
-        distance[src] = 0
-        Q = set(self.switch_dpid_list)
-        #print("\nDP ID List - ", Q)
-
-        while len(Q) > 0:
-            u = self.minimum_distance(distance, Q)
-            Q.remove(u)
-
-            for p in self.switch_dpid_list:
-                if self.adjacency[u][p] != None:
-                    if distance[p] > distance[u] + self.network_topology[u][p]:
-                        distance[p] = distance[u] + self.network_topology[u][p]
-                        previous[p] = u
-        r = []
-        p = dst
-        r.append(p)
-        q = previous[p]
-        while q is not None:
-            if q == src:
-                r.append(q)
-                break
-            p = q
-            r.append(p)
-            q = previous[p]
-        r.reverse()
-        if src == dst:
-            path = [src]
-        else:
-            path = r
-
-
-
-        # Adding the ports
-        r = []
-        in_port = first_port
-        for s1, s2 in zip(path[:-1], path[1:]):
-            out_port = self.adjacency[s1][s2]
-            r.append((s1, in_port, out_port))
-            in_port = self.adjacency[s2][s1]
-        r.append((dst, in_port, final_port))
-        print("\nThe result is: ", r, " For src - ",src, " For dst - ",dst)
-        return r
-        
-    def minimum_distance(self, distance, Q):
-        min = float('Inf')
-        node = 0
-        for v in Q:
-            if distance[v] <= min:
-                min = distance[v]
-                node = v
-        return node
+        self.dpid_neighbours = {}
+        self.distance_between_switches = {}
+        self.path_between_switches = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
 
         # Switches and links in the network
-        self.switches = get_switch(self, None)
+        switches = get_switch(self, None)
         links = get_link(self, None)
 
-         # getting dpid of each switch
-        self.switch_dpid_list = [switch.dp.id for switch in self.switches]
-        #  self.datapath_list = [switch.dp for switch in switch_list]  # getting the datapath of each switch
-        for switch in self.switches:
-            self.datapath_list[switch.dp.id] = switch.dp
+        for switch in switches :
+            self.dpid_neighbours.setdefault(switch.dp.id, {})
 
-        for switch in self.switches:
-            self.network_topology[switch.dp.id] = {}
-            for switch2 in self.switches:
-                if switch2 not in self.network_topology.keys():
-                    self.network_topology[switch2.dp.id] = {}
-                self.network_topology[switch.dp.id][switch2.dp.id] = float('inf')
-                self.network_topology[switch2.dp.id][switch.dp.id] = float('inf')
-                self.network_topology[switch.dp.id][switch.dp.id] = 0
+        for link in links:
+            src = link.src
+            dst = link.dst
+    
+            if src.dpid not in self.dpid_neighbours[dst.dpid]:
+                self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
+            
+            if dst.dpid not in self.dpid_neighbours[src.dpid]:
+                self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
-        mylinks = [(link.src.dpid, link.dst.dpid, link.src.port_no, link.dst.port_no) for link in links]
-        for s1, s2, port1, port2 in mylinks:
-            # If the direction of a link is: From source dpid to destination dpid ( let's
-            # say from switch number 1 to switch number 2), then the egress port would be source port of this link
-            # object and vice versa
-            self.adjacency[s1][s2] = port1
-            self.adjacency[s2][s1] = port2  # This is the vice versa :D
+        for switch in switches:
+            self.path_between_switches.setdefault(switch.dp.id,{})
+            self.distance_between_switches.setdefault(switch.dp.id, {switch2.dp.id : float('inf') for switch2.dp.id ind switches})
+            #Call dijkstra
+            self.dijkstra(switch.dp.id, switches)
 
-        for dpid_src, dpid_dst, src_port, dst_port in mylinks:
-            self.network_topology[dpid_src][dpid_dst] = 1
+    def dijkstra(self, source, switches):
+        dist = {switch.dp.id : float('inf') for switch.dp.id ind switches}
+        prev = {switch.dp.id : (None,None) for switch.dp.id ind switches}
+        dist[source] = 0
+        queue = [(0,source)]
+        visitedNodes = []
+        
+        while queue : 
+            cost, u = heapq.headpop(queue)
+            visitedNodes.append(u)
+            self.distance_between_switches[source][u] = dist[u]
+            for neighbour, port in self.dpid_neighbours[u]:
+                nextDist = dist[u] + 1
+                if nextDist < dist[neighbour] and neighbour not in visitedNodes :
+                    dist[neighbour] = nextDist
+                    prev[neighbour] = (u, port)
+                    heapq.heappush(queue, (nextDist, neighbour))
 
-        #self.switch_mac_table = [{} for x in range(self.switch_count + 1)]
+        for switch.dp.id in switches :
+            dest = switch.dp.id
+            path = []
+            previousNode = prev[dest]
+            self.path_between_switches[source].setdefault(dest,[])
+            while dest is not None :
+                path.insert(0, previousNode)
+                dest = prev[dest][0]
 
-
+            self.path_between_switches[source][switch.dp.id] = path
+            print("Path between - ",source, " and Destination - ",switch.dp.id, " is - ",path)
+        
+    
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
-
-
-        print ("switch_features_handler is called")
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS ,actions)]
-        mod = datapath.ofproto_parser.OFPFlowMod(
-        datapath=datapath, match=match, cookie=0,
-        command=ofproto.OFPFC_ADD, idle_timeout=0, hard_timeout=0,priority=0, instructions=inst)
-        datapath.send_msg(mod)
-
-        datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-    """
-        # Set initial values for all links to this switch to infinite
-        self.network_topology[datapath.id] = {}
-        self.switch_count += 1
-
-        
-        for id in self.network_topology:
-            self.network_topology[id][datapath.id] = float('inf')
-            self.network_topology[datapath.id][id] = float('inf')
-
-        # Set the value of the link to the current switch to 0
-        self.network_topology[datapath.id][datapath.id] = 0
 
         # Install entry-miss flow entry
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-    """
+        self.add_flow(datapath, 0, match, actions)
+
 
     # Add a flow entry to the flow-table
     def add_flow(self, datapath, priority, match, actions):
@@ -212,160 +136,10 @@ class SPRouter(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-
         msg = ev.msg
         datapath = msg.datapath
-        ofp = datapath.ofproto
-        parser = datapath.ofproto_parser
-        pkt = packet.Packet(msg.data)  # the data from the packet will be exported for further changes
-        in_port = None
-        out_port = None
-        for f in msg.match.fields:
-            if f.header == ofproto_v1_3.OXM_OF_IN_PORT:
-                in_port = f.value
-
-        eth = pkt.get_protocol(ethernet.ethernet)
-        src_mac = eth.src
-        dst_mac = eth.dst
         dpid = datapath.id
-
-        if eth.ethertype == ether_types.ETH_TYPE_LLDP or eth.ethertype == ether_types.ETH_TYPE_IPV6:
-            # ignore lldp packet
-            return
-        #  This mac "01:80:c2:00:00:0e" is my controller mac address which is automatically added in the match field of another table-miss flow in each switch. It is added by the option
-        #  "--observe-links" in the beginning of ruunning the controller. This option is mandatory to find the topology using RYU api.
-        if eth.ethertype == ether_types.ETH_TYPE_ARP: #and dst_mac != "0A:00:27:00:00:17"
-            self.handle_arp(datapath, pkt, src_mac, dst_mac, in_port, msg)
-            return
-
-        if eth.ethertype == ether_types.ETH_TYPE_IP:
-            ipv4_pkt = pkt.get_protocol(ipv4.ipv4)
-            src_ip = ipv4_pkt.src
-            dst_ip = ipv4_pkt.dst
-
-        if src_mac not in self.global_mac_table.keys():
-            self.global_mac_table[src_mac] = (dpid, in_port)
-
-        if dst_mac in self.global_mac_table.keys():
-            print("\n Src Mac - ", src_mac, " DST Mac - ",dst_mac)
-            p = self.dijkstra(self.global_mac_table[src_mac][0], self.global_mac_table[dst_mac][0], self.global_mac_table[src_mac][1], self.global_mac_table[dst_mac][1])
-                #self.found_paths.append(p)
-            self.install_path(p, ev, src_mac, dst_mac)
-                # this will be the output port for this switch to redirect the packets to the desired destination
-            out_port = p[0][2]
-
-        else:
-            # when the dst isn't found then it shall be flooded to all output ports
-            out_port = ofp.OFPP_FLOOD
-
-        actions = [parser.OFPActionOutput(out_port)]
-        if out_port != ofp.OFPP_FLOOD:
-            match = parser.OFPMatch(in_port=in_port, eth_src=src_mac, eth_dst=dst_mac)
-            self.add_flow(datapath, 1, match, actions)
-        data = None
-        if msg.buffer_id == ofp.OFP_NO_BUFFER:
-            # Data is set due to no buffering
-            data = msg.data
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,
-                                  data=data)
-        datapath.send_msg(out)
-        # TODO: handle new packets at the controller
-
-
-    def handle_arp(self, datapath, pkt, src, dst, in_port, msg):
-
-        parser = datapath.ofproto_parser
-        ofp = datapath.ofproto
-        actions = [parser.OFPActionOutput(ofp.OFPP_FLOOD)]
-        data = None
-        arp_pkt = pkt.get_protocol(arp.arp)
-        arp_spa = arp_pkt.src_ip  # getting the src ip address of the arp request
-        arp_tpa = arp_pkt.dst_ip
-
-        if arp_pkt.opcode == arp.ARP_REQUEST:  # check if it's an arp request
-            print("\nArp request src ip - ",arp_spa, " dst ip - ",arp_tpa)
-            if arp_tpa == self.controller_ip:  # If a host sends an arp req for the controller ip, then this packet is for the controller
-                arp_reply = arp.arp(hwtype=1, proto=0x0800, hlen=6, plen=4, opcode=2,
-                                    src_mac=self.controller_mac, src_ip=self.controller_ip,
-                                    dst_mac=src, dst_ip=arp_spa)
-                eth_header = ethernet.ethernet(
-                    dst=src,
-                    src=self.controller_mac,
-                    ethertype=ether.ETH_TYPE_ARP)
-                arp_reply_pkt = packet.Packet()
-                arp_reply_pkt.add_protocol(eth_header)
-                arp_reply_pkt.add_protocol(arp_reply)
-                arp_reply_pkt.serialize()
-                arp_action = [parser.OFPActionOutput(in_port)]
-                out = parser.OFPPacketOut(datapath=datapath,
-                                          buffer_id=ofp.OFP_NO_BUFFER,
-                                          in_port=ofp.OFPP_ANY,
-                                          actions=arp_action,
-                                          data=arp_reply_pkt.data)
-                datapath.send_msg(out)
-                return
-            #print("\n Data path - ",datapath,"\n Datapath id -", datapath.id, "\n Map len-", len(self.switch_mac_table), "\n Map - ", self.switch_mac_table)
-            #self.logger.info("\n Map with Key - %s",self.switch_mac_table[datapath.id], "\n Keys - %s",self.switch_mac_table[datapath.id].keys())
-            if datapath.id not in self.switch_mac_table.keys() :
-                self.switch_mac_table[datapath.id] = {}
-            if src not in self.switch_mac_table[datapath.id].keys():
-                self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)  # Updating mac table of this 
-                if msg.buffer_id == ofp.OFP_NO_BUFFER:
-                    data = msg.data
-                out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,
-                                          data=data)
-                datapath.send_msg(out)
-                return
-            if src in self.switch_mac_table[datapath.id].keys():
-                if arp_tpa in self.switch_mac_table[datapath.id][src]:
-                    return
-
-                else:
-                    self.switch_mac_table[datapath.id][src] = (in_port, arp_tpa)
-                    if msg.buffer_id == ofp.OFP_NO_BUFFER:
-                        data = msg.data
-                    out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port,
-                                              actions=actions,
-                                              data=data)
-                    datapath.send_msg(out)
-                    return
-
-        if arp_pkt.opcode == arp.ARP_REPLY:  # check if it's an arp reply
-            if datapath.id in self.switch_mac_table.keys() and dst in self.switch_mac_table[datapath.id].keys():
-                parser = datapath.ofproto_parser
-                ofp = datapath.ofproto
-                actions = [parser.OFPActionOutput(self.switch_mac_table[datapath.id][dst][0])]
-                out = parser.OFPPacketOut(datapath=datapath, buffer_id=ofp.OFP_NO_BUFFER,
-                                          in_port=in_port, actions=actions, data=msg.data)
-                datapath.send_msg(out)
-
-
-    def install_path(self, p, ev, src_mac, dst_mac):
-        shortest_path_route = ""
-        for z in p:
-            shortest_path_route += str(z[0]) + "-"
-
-        print ("\n Shortest Path for src_mac-",src_mac," dst mac- ",dst_mac," is - ",shortest_path_route)
-
-        msg = ev.msg
-        datapath = msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        for sw, in_port, out_port in p:
-            match = parser.OFPMatch(in_port=in_port, eth_src=src_mac,eth_dst=dst_mac)
-            #matchFlow = parser.OFPMatch(in_port=in_port,eth_dst=dst_mac)
-            actions = [parser.OFPActionOutput(out_port)]
-            datapath = self.datapath_list[int(sw)]
-            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-            mod = datapath.ofproto_parser.OFPFlowMod(
-                datapath=datapath, match=match, priority=1, instructions=inst)
-            datapath.send_msg(mod)
-"""
-        for sw, in_port, out_port in reversed(p):
-            match = parser.OFPMatch(in_port=out_port, eth_src=dst_mac, eth_dst=src_mac)
-            actions = [parser.OFPActionOutput(in_port)]
-            datapath = self.datapath_list[int(sw)]
-            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-            mod = datapath.ofproto_parser.OFPFlowMod(
-                datapath=datapath, match=match, priority=1, instructions=inst)
-"""
+
+        # TODO: handle new packets at the controller
