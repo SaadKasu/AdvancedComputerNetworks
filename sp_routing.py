@@ -170,7 +170,7 @@ class SPRouter(app_manager.RyuApp):
         if src not in self.ip_datapath :
             self.ip_datapath[src]= (dpid, in_port)
 
-        print(" IP data path - ", self.ip_datapath)
+        #print(" IP data path - ", self.ip_datapath)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             self.handle_arp(datapath, pkt, in_port, eth)
@@ -198,7 +198,7 @@ class SPRouter(app_manager.RyuApp):
 
 
         else : 
-
+            print(" Has out put port")
             dst_sw = self.ip_datapath[src][0]
             dst_port = self.ip_datapath[src][1]
             src_sw = dpid
@@ -237,8 +237,6 @@ class SPRouter(app_manager.RyuApp):
     def send_arp_reply(self, datapath, pkt, in_port, eth, arp_pkt):
 
         self.logger.info("Inside The ARP if condition, Learn The Mac Of The Router")
-
-        self.arp_table[arp_pkt.src_ip] = {'mac': eth.src, 'port': in_port}
         
         src_mac = '00:00:00:00:00:00'
         src_ip = arp_pkt.dst_ip
