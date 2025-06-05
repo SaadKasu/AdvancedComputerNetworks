@@ -315,11 +315,12 @@ class SPRouter(app_manager.RyuApp):
 
         pkt.serialize()
 
-        for key, value[] in self.switch_without_hosts :
-            if len(value) < 4 : 
+        for key in self.switch_without_hosts :
+            values = self.switch_without_hosts[key]
+            if len(values) < 4 : 
                 dp = self.switch_datapath(key)
                 for port in range(1, 5):  # adjust based on your topology
-                    if port not in value : 
+                    if port not in values : 
                         actions = [dp.ofproto_parser.OFPActionOutput(port)]
                         out = dp.ofproto_parser.OFPPacketOut(
                             datapath=dp,
