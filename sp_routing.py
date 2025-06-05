@@ -170,9 +170,10 @@ class SPRouter(app_manager.RyuApp):
         if src not in self.ip_datapath :
             self.ip_datapath[src]= (dpid, in_port)
 
+        print(" IP data path - ", self.ip_datapath)
+
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             self.handle_arp(datapath, pkt, in_port, eth)
-            return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port)
@@ -230,8 +231,42 @@ class SPRouter(app_manager.RyuApp):
         self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         if arp_pkt.opcode == arp.ARP_REQUEST : 
-            return
-            #self.send_arp_request(datapath, pkt, in_port, eth, arp_pkt)
-        else : 
-            return
-            #self.handle_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
+            self.send_arp_reply(datapath, pkt, in_port, eth, arp_pkt)
+
+
+    def send_arp_reply(self, datapath, pkt, in_port, eth, arp_pkt):
+
+        self.logger.info("Inside The ARP if condition, Learn The Mac Of The Router")
+
+        self.arp_table[arp_pkt.src_ip] = {'mac': eth.src, 'port': in_port}
+        
+        src_mac = '00:00:00:00:00:00'
+        src_ip = arp_pkt.dst_ip
+        dst_ip = arp_pkt.src_ip
+        dst_mac = eth.src
+        dst = eth.src
+        src = src_mac
+        self.logger.info("ARP Reply src_mac : %s SRC IP : %s DST IP : %s DST Mac : %s SRC : %s DST : %s",src_mac, src_ip, dst_ip, dst_mac, src, dst)          
+        
+        arp_reply = packet.Packet()
+        arp_reply.add_protocol(ethernet.ethernet(
+            ethertype = eth.ethertype,
+            dst = dst_mac,
+            src = src_mac
+        ))
+        arp_reply.add_protocol(arp.arp(
+            opcode = arp.ARP_REPLY,
+            src_mac = src_mac,
+            src_ip = src_ip,
+            dst_mac = dst_mac,
+            dst_ip = dst_ip
+        ))
+        arp_reply.serialize()
+
+        parser = datapath.ofproto_parser
+        ofproto = datapath.ofproto
+        actions = [parser.OFPActionOutput(in_port)]
+        out = parser.OFPPacketOut(datapath=datapath, in_port=ofproto.OFPP_CONTROLLER,
+                                  actions=actions, data=arp_reply.data,
+                                  buffer_id=ofproto.OFP_NO_BUFFER)
+        datapath.send_msg(out)
