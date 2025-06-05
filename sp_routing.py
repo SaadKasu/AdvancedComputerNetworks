@@ -186,7 +186,7 @@ class SPRouter(app_manager.RyuApp):
         
         self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
 
-        if dst not in ip_datapath :
+        if dst not in self.ip_datapath :
             out_port = ofp.OFPP_FLOOD
             actions = [parser.OFPActionOutput(out_port)]
             data = None
