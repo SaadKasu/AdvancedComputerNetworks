@@ -91,7 +91,7 @@ class SPRouter(app_manager.RyuApp):
         visitedNodes = []
         
         while queue : 
-            cost, u = heapq.headpop(queue)
+            cost, u = heapq.heappop(queue)
             visitedNodes.append(u)
             self.distance_between_switches[source][u] = dist[u]
             for neighbour, port in self.dpid_neighbours[u]:
