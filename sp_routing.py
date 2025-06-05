@@ -81,6 +81,7 @@ class SPRouter(app_manager.RyuApp):
             self.dijkstra(switch.dp.id, switches)
 
     def dijkstra(self, source, switches):
+        dist = {}
         for switch in switches :
             dist[switch.dp.id] = float('inf')
             prev[switch.dp.id] = (None,None)
