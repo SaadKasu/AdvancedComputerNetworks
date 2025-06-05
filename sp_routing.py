@@ -74,17 +74,10 @@ class SPRouter(app_manager.RyuApp):
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
         for switch in switches:
-            if switch.dp.id not in self.path_between_switches :
-                self.path_between_switches[switch.dp.id] = {}
+            self.path_between_switches[switch.dp.id] = {}
+            self.distance_between_switches[switch.dp.id] = {}
 
-            if switch.dp.id not in self.path_between_switches :
-                self.distance_between_switches[switch.dp.id] = {}
-
-            for switch2 in switches:
-                if switch2.dp.id not in self.distance_between_switches[switch.dp.id] : 
-                    self.distance_between_switches[switch.dp.id][switch2.dp.id] = float('inf')
-            #Call dijkstra
-                    self.dijkstra(switch.dp.id, switches)
+            self.dijkstra(switch.dp.id, switches)
 
         for switch in switches :
             print("\nSwitch - ", switch)
