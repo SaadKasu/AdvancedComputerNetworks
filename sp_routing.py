@@ -261,7 +261,7 @@ class SPRouter(app_manager.RyuApp):
             self.handle_arp_reply(datapath, in_port, eth, arp_pkt)
 
 
-    def handle_arp_request(self, datapath, pkt, in_port, eth, arp_pkt):
+    def handle_arp_request(self, datapath, in_port, eth, arp_pkt):
 
         dst_ip = arp_pkt.dst_ip
 
