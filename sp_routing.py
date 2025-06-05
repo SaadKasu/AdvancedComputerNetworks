@@ -226,7 +226,7 @@ class SPRouter(app_manager.RyuApp):
             src_sw = dpid
             src_port = in_port
 
-            path = dijkstra(src_sw, dst_sw)
+            path = self.dijkstra(src_sw, dst_sw)
 
             print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
@@ -321,6 +321,7 @@ class SPRouter(app_manager.RyuApp):
                 dp = self.switch_datapath(key)
                 for port in range(1, 5):  # adjust based on your topology
                     if port not in values : 
+                        print("\nHost on port - ", port, " Switch id - ", key)
                         actions = [dp.ofproto_parser.OFPActionOutput(port)]
                         out = dp.ofproto_parser.OFPPacketOut(
                             datapath=dp,
