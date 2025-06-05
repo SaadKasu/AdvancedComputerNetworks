@@ -219,7 +219,12 @@ class SPRouter(app_manager.RyuApp):
                 parser = datapath.ofproto_parser
                 match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
                 actions = [parser.OFPActionOutput(port)]
-            
+                data = None
+                if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+                # Data is set due to no buffering
+                    data = msg.data
+                out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
+                datapath.send_msg(out)
                 self.add_flow(datapath, 0, match, actions)
 
 
@@ -228,6 +233,12 @@ class SPRouter(app_manager.RyuApp):
             parser = datapath.ofproto_parser
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=src, ipv4_dst=dst)
             actions = [parser.OFPActionOutput(dst_port)]
+            data = None
+            if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            # Data is set due to no buffering
+                data = msg.data
+            out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions,data=data)
+            datapath.send_msg(out)
             self.add_flow(datapath, 0, match, actions)
             
 
