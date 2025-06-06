@@ -68,7 +68,7 @@ class SPRouter(app_manager.RyuApp):
             self.switch_datapath[switch.dp.id] = switch.dp
 
         for link in self.links:
-            print("\n Link - ", link)
+            #print("\n Link - ", link)
             src = link.src
             dst = link.dst
 
