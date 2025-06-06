@@ -109,7 +109,7 @@ class FattreeNet(Topo):
                     pod_count = 0
 
             else : 
-                dp_id = str("2") + str(edge_switch)
+                dp_id = str("3") + str(edge_switch)
                 added_switch = self.addSwitch(switch.id, 
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
