@@ -264,16 +264,16 @@ class SPRouter(app_manager.RyuApp):
 
             #print("IP Packet : %s",ipv4_pkt)
         
-            pkt_n = packet.Packet()            
-            pkt_n.add_protocol(eth_pkt)
-            pkt_n.add_protocol(ipv4_pkt)        
+            pkt = packet.Packet()            
+            pkt.add_protocol(eth_pkt)
+            pkt.add_protocol(ipv4_pkt)        
         
-            pkt_n.serialize()
+            pkt.serialize()
             dp = self.switch_datapath[dst_sw]
             ofproto = dp.ofproto
             out = parser.OFPPacketOut(
             datapath=dp, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
-            actions=actions, data=pkt.data)
+            actions=actions, data=msg.data)
             datapath.send_msg(out)
 
         
