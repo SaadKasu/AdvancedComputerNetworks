@@ -224,7 +224,7 @@ def make_mininet_instance(graph_topo):
     net_topo = FattreeNet(graph_topo)
     net = Mininet(topo=net_topo, controller=None, autoSetMacs=True)
     net.addController('c0', controller=RemoteController,
-                      ip="127.0.0.1", port=6653, mac="0A:00:27:00:00:43")
+                      ip="127.0.0.1", port=6653)
     return net
 
 

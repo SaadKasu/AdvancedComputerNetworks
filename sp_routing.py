@@ -84,6 +84,12 @@ class SPRouter(app_manager.RyuApp):
             
             if dst.dpid not in self.dpid_neighbours[src.dpid]:
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
+
+        for switchId in self.dpid_neighbours :
+            neighbours = self.dpid_neighbours [switchId]
+            print("\n The neighbours of switch - ", switchId, " is : ")
+            for key, value in neighbours :
+                print("\n Neighbour - ",key, " At Port - ", value)
                 """
         for switch in self.switches:
             self.path_between_switches[switch.dp.id] = {}
@@ -322,7 +328,7 @@ class SPRouter(app_manager.RyuApp):
                 dp = self.switch_datapath[key]
                 for port in range(1, 5):  # adjust based on your topology
                     if port not in values : 
-                        print("\nHost on port - ", port, " Switch id - ", key)
+                        #print("\nHost on port - ", port, " Switch id - ", key)
                         actions = [dp.ofproto_parser.OFPActionOutput(port)]
                         out = dp.ofproto_parser.OFPPacketOut(
                             datapath=dp,
