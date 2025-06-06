@@ -124,6 +124,9 @@ class SPRouter(app_manager.RyuApp):
                     dist[neighbour] = nextDist
                     prev[neighbour] = (curr_switch, self.dpid_neighbours[curr_switch][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
+            poped_node = heapq.heappop(queue)
+            curr_dist = poped_node[0]
+            curr_switch = poped_node[1]
 
         path = []
         previousNode = prev[destination]
@@ -281,7 +284,7 @@ class SPRouter(app_manager.RyuApp):
 
         self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
-        dst_mac = eth.src
+        dst_mac = self.arp_table[arp_pkt.src_ip]
         src_mac = self.arp_table[arp_pkt.dst_ip]
 
         pkt = packet.Packet()
