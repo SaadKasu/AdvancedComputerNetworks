@@ -236,7 +236,7 @@ class SPRouter(app_manager.RyuApp):
             src_port = in_port
 
             path = self.dijkstra(src_sw, dst_sw)
-            path.append(dst_sw, dst_port)
+            path.append([dst_sw, dst_port])
 
             print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
