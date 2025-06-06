@@ -87,9 +87,9 @@ class SPRouter(app_manager.RyuApp):
 
         for switchId in self.dpid_neighbours :
             neighbours = self.dpid_neighbours [switchId]
-            #print("\n The neighbours of switch - ", switchId, " is : ")
+            print("\n The neighbours of switch - ", switchId, " is : ")
             for key in neighbours :
-                #print("\n Neighbour - ",key, " At Port - ", neighbours[key])
+                print("\n Neighbour - ",key, " At Port - ", neighbours[key])
                 """
         for switch in self.switches:
             self.path_between_switches[switch.dp.id] = {}
@@ -115,7 +115,7 @@ class SPRouter(app_manager.RyuApp):
         poped_node = heapq.heappop(queue)
         curr_dist = poped_node[0]
         curr_switch = poped_node[1]
-        while curr_switch != destination: 
+        while curr_switch != destination and !queue: 
             visitedNodes.append(curr_switch)
             #self.distance_between_switches[source][curr_switch] = dist[curr_switch]
             for neighbour in self.dpid_neighbours[curr_switch]:
