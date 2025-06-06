@@ -248,7 +248,7 @@ class SPRouter(app_manager.RyuApp):
                 actions = [parser.OFPActionOutput(port)]
                 self.add_flow(datapath, 10, match, actions)
 
-"""
+            """
             datapath = self.switch_datapath[dst_sw]
             ofproto = datapath.ofproto
             parser = datapath.ofproto_parser
