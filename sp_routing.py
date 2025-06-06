@@ -201,7 +201,7 @@ class SPRouter(app_manager.RyuApp):
             return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
-            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg, eth_pkt)
+            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg, eth)
 
     def handle_ip(self,dpid, pkt, in_port, msg, eth_pkt):
 
