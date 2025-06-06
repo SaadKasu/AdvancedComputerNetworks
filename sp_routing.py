@@ -77,7 +77,7 @@ class SPRouter(app_manager.RyuApp):
                 self.switch_without_hosts[src.dpid] = set()
 
             self.switch_without_hosts[dst.dpid].add(dst.port_no)
-            self.switch_without_hosts[dst.dpid].add(src.port_no)
+            self.switch_without_hosts[src.dpid].add(src.port_no)
     
             if src.dpid not in self.dpid_neighbours[dst.dpid]:
                 self.dpid_neighbours[dst.dpid][src.dpid] = dst.port_no
@@ -259,7 +259,6 @@ class SPRouter(app_manager.RyuApp):
 
         arp_pkt = pkt.get_protocol(arp.arp) 
                 
-        self.logger.info("Handling an ARP SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         if arp_pkt.opcode == arp.ARP_REQUEST : 
             self.handle_arp_request(datapath, in_port, eth, arp_pkt)
@@ -279,6 +278,9 @@ class SPRouter(app_manager.RyuApp):
             self.flood_arp(datapath, eth, arp_pkt)
 
     def handle_arp_reply(self, datapath, in_port, eth, arp_pkt):
+
+        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+
         dst_mac = eth.src
         src_mac = self.arp_table[arp_pkt.dst_ip]
 
@@ -307,6 +309,9 @@ class SPRouter(app_manager.RyuApp):
 
 
     def flood_arp(self, datapath, eth, arp_pkt):
+
+        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
             ethertype=ether_types.ETH_TYPE_ARP,
