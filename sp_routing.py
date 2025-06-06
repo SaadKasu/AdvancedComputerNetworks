@@ -66,6 +66,8 @@ class SPRouter(app_manager.RyuApp):
         for switch in self.switches :
             self.dpid_neighbours.setdefault(switch.dp.id, {})
             self.switch_datapath[switch.dp.id] = switch.dp
+            if switch.dp.id == 16:
+                print("\nHELLO")
 
         for link in self.links:
             src = link.src
