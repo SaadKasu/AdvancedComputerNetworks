@@ -201,9 +201,9 @@ class SPRouter(app_manager.RyuApp):
             return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
-            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg)
+            self.handle_ip(dpid, pkt.get_protocol(ipv4.ipv4), in_port, msg, eth_pkt)
 
-    def handle_ip(self,dpid, pkt, in_port, msg):
+    def handle_ip(self,dpid, pkt, in_port, msg, eth_pkt):
 
         src = pkt.src
         dst = pkt.dst
@@ -247,6 +247,7 @@ class SPRouter(app_manager.RyuApp):
                 match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst)
                 actions = [parser.OFPActionOutput(port)]
                 self.add_flow(datapath, 10, match, actions)
+                datapath.send_msg(out)
 
             """
             datapath = self.switch_datapath[dst_sw]
@@ -256,6 +257,23 @@ class SPRouter(app_manager.RyuApp):
             actions = [parser.OFPActionOutput(dst_port)]
             self.add_flow(datapath, 10, match, actions)
             """
+
+            eth_pkt = ethernet.ethernet(dst=self.arp_table[dst], src=elf.arp_table[src], ethertype=eth.ethertype)
+
+            ipv4_pkt = ipv4.ipv4(dst=dst, src=src, proto=pkt.proto)
+
+            self.logger.info("IP Packet : %s",ipv4_pkt)
+            
+            pkt.add_protocol(eth_pkt)
+            pkt.add_protocol(ipv4_pkt)        
+        
+            pkt.serialize()
+            dp = self.switch_datapath[dst_sw]
+            ofproto = dp.ofproto
+            out = parser.OFPPacketOut(
+            datapath=dp, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
+            actions=actions, data=pkt.data)
+            datapath.send_msg(out)
 
         
 
