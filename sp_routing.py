@@ -257,7 +257,7 @@ class SPRouter(app_manager.RyuApp):
             self.add_flow(datapath, 10, match, actions)
             """
 
-            eth_pkt = ethernet.ethernet(dst=self.arp_table[dst], src=self.arp_table[src], ethertype=eth.ethertype)
+            eth_pkt = ethernet.ethernet(dst=self.arp_table[dst], src=self.arp_table[src], ethertype=eth_pkt.ethertype)
 
             ipv4_pkt = ipv4.ipv4(dst=dst, src=src, proto=pkt.proto)
 
