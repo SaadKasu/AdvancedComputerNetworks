@@ -310,7 +310,7 @@ class SPRouter(app_manager.RyuApp):
 
     def flood_arp(self, datapath, eth, arp_pkt):
 
-        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+        self.logger.info("Handling an flood ARP SRC IP : %s DST IP : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, eth.src, eth.dst)
 
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
