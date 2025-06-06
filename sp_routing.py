@@ -246,7 +246,7 @@ class SPRouter(app_manager.RyuApp):
                 parser = datapath.ofproto_parser
                 match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst)
                 actions = [parser.OFPActionOutput(port)]
-                self.add_flow(datapath, 10, match, actions)
+                #self.add_flow(datapath, 10, match, actions)
 
             """
             datapath = self.switch_datapath[dst_sw]
