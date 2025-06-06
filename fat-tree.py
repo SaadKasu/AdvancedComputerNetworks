@@ -82,7 +82,8 @@ class FattreeNet(Topo):
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(num_ports)+'.'+str(i)+'.'+str(j),
                 dpid = dp_id)
-                self.name_dpId_map[switch.id] = dp_id
+                self.name_dpId_map[dp_id] = switch.id
+                print("\n Switch name - ",switch.id , " Switch dp id - ",dp_id)
                 core_switch += 1
                 self.node_map[switch.id] = added_switch
                 j += 1
@@ -96,7 +97,8 @@ class FattreeNet(Topo):
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(aggr_count)+'.'+"1",
                 dpid = dp_id)
-                self.name_dpId_map[switch.id] = dp_id
+                self.name_dpId_map[dp_id] = switch.id
+                print("\n Switch name - ",switch.id , " Switch dp id - ",dp_id)
                 aggr_switch += 1
                 self.node_map[switch.id] = added_switch
                 aggr_count += 1
@@ -112,9 +114,10 @@ class FattreeNet(Topo):
                 cls = OVSKernelSwitch, 
                 ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+"1",
                 dpid = dp_id)
-                self.name_dpId_map[switch.id] = dp_id
+                self.name_dpId_map[dp_id] = switch.id
                 edge_switch += 1
                 self.node_map[switch.id] = added_switch
+                print("\n Switch name - ",switch.id , " Switch dp id - ",dp_id)
                 edge_count += 1
                 if edge_count >= half_ports :
                     pod_count += 1
@@ -132,9 +135,10 @@ class FattreeNet(Topo):
             added_host = self.addHost(host.id,
             ip = '10.'+str(pod_count)+'.'+str(edge_count)+'.'+ str(host_count),
             dpid = dp_id)
-            self.name_dpId_map[host.id] = dp_id
+            self.name_dpId_map[dp_id] = host.id
             server_count += 1
-            self.node_map[host.id] = added_host
+            self.node_map[host.id] = added_host 
+            print("\n Hose name - ",host.id , " Host dp id - ",dp_id)
             host_count += 1
             if host_count - 2 >= half_ports:
                 edge_count += 1
