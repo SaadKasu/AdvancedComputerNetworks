@@ -87,9 +87,9 @@ class SPRouter(app_manager.RyuApp):
 
         for switchId in self.dpid_neighbours :
             neighbours = self.dpid_neighbours [switchId]
-            print("\n The neighbours of switch - ", switchId, " is : ")
+            #print("\n The neighbours of switch - ", switchId, " is : ")
             for key in neighbours :
-                print("\n Neighbour - ",key, " At Port - ", neighbours[key])
+                #print("\n Neighbour - ",key, " At Port - ", neighbours[key])
                 """
         for switch in self.switches:
             self.path_between_switches[switch.dp.id] = {}
@@ -181,6 +181,7 @@ class SPRouter(app_manager.RyuApp):
         dst = ""
         prot_pkt = ""
 
+
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             prot_pkt = pkt.get_protocol(arp.arp)
             src = prot_pkt.src_ip  # getting the src ip address of the arp request
@@ -194,6 +195,7 @@ class SPRouter(app_manager.RyuApp):
         self.ip_datapath[src]= (dpid, in_port)
         self.arp_table[src] = eth.src
 
+        print("\n The Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
         #print(" IP data path - ", self.ip_datapath)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
@@ -229,7 +231,7 @@ class SPRouter(app_manager.RyuApp):
 
 
         else : 
-            print(" Has out put port")
+            #print(" Has out put port")
             dst_sw = self.ip_datapath[dst][0]
             dst_port = self.ip_datapath[dst][1]
             src_sw = dpid
@@ -262,7 +264,7 @@ class SPRouter(app_manager.RyuApp):
 
             ipv4_pkt = ipv4.ipv4(dst=dst, src=src, proto=pkt.proto)
 
-            print("IP Packet : %s",ipv4_pkt)
+            #print("IP Packet : %s",ipv4_pkt)
         
             pkt = packet.Packet()            
             pkt.add_protocol(eth_pkt)
@@ -351,7 +353,7 @@ class SPRouter(app_manager.RyuApp):
 
         for key in self.switch_without_hosts :
             values = self.switch_without_hosts[key]
-            print("\nValues - ",values, " For DPID - ", key)
+            #print("\nValues - ",values, " For DPID - ", key)
             if len(values) < 4 : 
                 dp = self.switch_datapath[key]
                 for port in range(1, 5):  # adjust based on your topology
