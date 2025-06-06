@@ -195,7 +195,6 @@ class SPRouter(app_manager.RyuApp):
         self.ip_datapath[src]= (dpid, in_port)
         self.arp_table[src] = eth.src
 
-        print("\n The Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
         #print(" IP data path - ", self.ip_datapath)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
@@ -209,9 +208,8 @@ class SPRouter(app_manager.RyuApp):
 
         src = pkt.src
         dst = pkt.dst
-
-        
-        self.logger.info("Handling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
+        print("\n The Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
+        self.logger.info("\nHandling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
     
         if dst not in self.ip_datapath :
             """
