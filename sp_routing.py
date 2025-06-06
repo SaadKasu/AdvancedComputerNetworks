@@ -88,8 +88,8 @@ class SPRouter(app_manager.RyuApp):
         for switchId in self.dpid_neighbours :
             neighbours = self.dpid_neighbours [switchId]
             print("\n The neighbours of switch - ", switchId, " is : ")
-            for key, value in neighbours :
-                print("\n Neighbour - ",key, " At Port - ", value)
+            for key in neighbours :
+                print("\n Neighbour - ",key, " At Port - ", neighbours[key])
                 """
         for switch in self.switches:
             self.path_between_switches[switch.dp.id] = {}
