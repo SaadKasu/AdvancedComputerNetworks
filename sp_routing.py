@@ -236,6 +236,7 @@ class SPRouter(app_manager.RyuApp):
             src_port = in_port
 
             path = self.dijkstra(src_sw, dst_sw)
+            path.append(dst_sw, dst_port)
 
             print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
@@ -247,14 +248,14 @@ class SPRouter(app_manager.RyuApp):
                 actions = [parser.OFPActionOutput(port)]
                 self.add_flow(datapath, 10, match, actions)
 
-
+"""
             datapath = self.switch_datapath[dst_sw]
             ofproto = datapath.ofproto
             parser = datapath.ofproto_parser
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst)
             actions = [parser.OFPActionOutput(dst_port)]
             self.add_flow(datapath, 10, match, actions)
-            
+            """
 
         
 
