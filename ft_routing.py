@@ -354,7 +354,7 @@ class FTRouter(app_manager.RyuApp):
             src_ip=arp_pkt.src_ip))
 
         pkt.serialize()
-        datapath = self.ip_datapath[arp_pkt.dst_ip][0]
+        datapath = self.switch_datapath[self.ip_datapath[arp_pkt.dst_ip][0]]
         in_port = self.ip_datapath[arp_pkt.dst_ip][1]
 
         actions = [datapath.ofproto_parser.OFPActionOutput(in_port)]
