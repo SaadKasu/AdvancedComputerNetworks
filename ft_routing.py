@@ -217,13 +217,8 @@ class FTRouter(app_manager.RyuApp):
 
         if self.prefix_match(dst, dpid) :
             print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst, " Src - ", src)
-            if switch_type == "aggr":
-                port_no = self.suffix_match(dst, dpid)
-            else :
-                if dst in self.ip_datapath :
-                    port_no = self.ip_datapath[dst][1]
-                else :
-                    port_no = 0
+
+            port_no = self.suffix_match(dst, dpid)
 
             if port_no == 0:
                 print("Could Not Find The Correct Output Port")
@@ -278,7 +273,8 @@ class FTRouter(app_manager.RyuApp):
             return port_list[dpid%2]
         elif len(port_list) > 0 : 
             return port_list[0]
-
+        elif dst in self.ip_datapath :
+            return self.ip_datapath[dst][1]
         return 0
         
 
