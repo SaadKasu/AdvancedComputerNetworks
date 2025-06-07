@@ -85,12 +85,12 @@ class FTRouter(app_manager.RyuApp):
             if switch.dp.id in self.edge_dpid :
                 switch_type = "edge"
                 pod_num = int((switch.dp.id - self.edge_dpid[0])/2)
-                subnet_num = int((switch.dp.id - self.edge_dpid[0])%2) + 1
+                subnet_num = int((switch.dp.id - self.edge_dpid[0])%2)
                 start_num = 1
             elif switch.dp.id in self.aggr_dpid :
                 switch_type = "aggr"
                 pod_num = int((switch.dp.id - self.aggr_dpid[0])/2)
-                subnet_num = int((switch.dp.id - self.aggr_dpid[0])%2) + 3
+                subnet_num = int((switch.dp.id - self.aggr_dpid[0])%2) + 2
                 start_num = 1
             else :
                 switch_type = "core"
@@ -196,8 +196,8 @@ class FTRouter(app_manager.RyuApp):
 
         src = pkt.src
         dst = pkt.dst
-        print("\n The Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
-        self.logger.info("\nHandling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
+        print("\nThe Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
+        print("\nHandling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
 
         port_type = ""
         switch_type = ""
@@ -216,7 +216,7 @@ class FTRouter(app_manager.RyuApp):
         """
 
         if self.prefix_match(dst, dpid) :
-            print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst)
+            print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst, " Src - ", src)
             if switch_type == "aggr":
                 port_no = self.suffix_match(dst, dpid)
             else :
@@ -236,7 +236,7 @@ class FTRouter(app_manager.RyuApp):
                 port_no = pod_num + 1
             else :
                 port_no = int(dpid%2) + 1
-
+        print("\n Switch Type - ",switch_type, " Out Port - ", port_no, )
         self.add_flow (self.switch_datapath[dpid],
         10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
         [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
