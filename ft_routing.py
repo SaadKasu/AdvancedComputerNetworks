@@ -254,8 +254,8 @@ class FTRouter(app_manager.RyuApp):
         pkt.add_protocol(ipv4_pkt)  
         pkt.serialize()
         ofproto = datapath.ofproto
-        actions = [parser.OFPActionOutput(port_no)]
-        out = parser.OFPPacketOut(
+        actions = [datapath.ofproto_parser.OFPActionOutput(port_no)]
+        out = datapath.ofproto_parser.OFPPacketOut(
         datapath=datapath, buffer_id=ofproto.OFP_NO_BUFFER, in_port=ofproto.OFPP_CONTROLLER,
         actions=actions, data=msg.data)
         datapath.send_msg(out)
