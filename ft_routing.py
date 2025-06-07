@@ -273,6 +273,7 @@ class FTRouter(app_manager.RyuApp):
             if neighbour_ip[0:7] == dst[0:7]:
                 port_list.append(neighbours[neigh_dpid])
         print("\n Port List - ", port_list)
+        print("\n Ip Data Path - ", self.ip_datapath)
         if len(port_list) > 1 :
             return port_list[dpid%2]
         elif len(port_list) > 0 : 
