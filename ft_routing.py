@@ -238,8 +238,8 @@ class FTRouter(app_manager.RyuApp):
                 port_no = int(dpid%2) + 1
 
         self.add_flow (self.switch_datapath[dpid],
-        10 , self.switch_datapath[dpid].parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
-        [self.switch_datapath[dpid].parser.OFPActionOutput(port_no)])
+        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
         self.forwardPacket(dpid, msg, eth_pkt, src, dst, port_no)
             
             
