@@ -244,7 +244,7 @@ class FTRouter(app_manager.RyuApp):
             
             
 
-    def forwardPacket(dpid, msg, eth_pkt, src, dst, pkt, port_no) :
+    def forwardPacket(self, dpid, msg, eth_pkt, src, dst, pkt, port_no) :
 
         datapath = self.switch_datapath[dpid]
         eth_pkt = ethernet.ethernet(dst=self.arp_table[dst], src=self.arp_table[src], ethertype=eth_pkt.ethertype)
