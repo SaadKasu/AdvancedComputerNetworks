@@ -178,9 +178,10 @@ class FTRouter(app_manager.RyuApp):
             prot_pkt = pkt.get_protocol(ipv4.ipv4)
             src = prot_pkt.src
             dst = prot_pkt.dst
-            
-        self.ip_datapath[src]= (dpid, in_port)
-        self.arp_table[src] = (eth.src, in_port)
+        if src not in self.ip_datapath:
+            self.ip_datapath[src]= (dpid, in_port)
+        if src not in self.arp_table:
+            self.arp_table[src] = (eth.src, in_port)
 
         #print(" IP data path - ", self.ip_datapath)
 
