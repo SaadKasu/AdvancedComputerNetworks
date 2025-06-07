@@ -269,7 +269,7 @@ class FTRouter(app_manager.RyuApp):
         neighbours = self.dpid_neighbours [dpid]
         for neigh_dpid in neighbours :
             neighbour_ip = self.dpid_ip[neigh_dpid]
-            if neighbour_ip[5:7] == dst[5:7]:
+            if neighbour_ip[0:7] == dst[0:7]:
                 port_list.append(neighbours[neigh_dpid])
 
         if len(port_list) > 1 :
