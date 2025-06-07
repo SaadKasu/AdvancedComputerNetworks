@@ -219,7 +219,7 @@ class FTRouter(app_manager.RyuApp):
             print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst, " Src - ", src)
 
             port_no = self.suffix_match(dst, dpid)
-
+            print("\n Port No. ", port_no)
             if port_no == 0:
                 if switch_type == "edge" :
                     print ("On Edge Switch But Wrong Subnet")
@@ -271,7 +271,7 @@ class FTRouter(app_manager.RyuApp):
             neighbour_ip = self.dpid_ip[neigh_dpid]
             if neighbour_ip[0:7] == dst[0:7]:
                 port_list.append(neighbours[neigh_dpid])
-
+        print("\n Port List - ", port_list)
         if len(port_list) > 1 :
             return port_list[dpid%2]
         elif len(port_list) > 0 : 
