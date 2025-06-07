@@ -221,9 +221,12 @@ class FTRouter(app_manager.RyuApp):
             port_no = self.suffix_match(dst, dpid)
 
             if port_no == 0:
-                print("Could Not Find The Correct Output Port")
-                return
-            
+                if switch_type == "edge" :
+                    print ("On Edge Switch But Wrong Subnet")
+                    port_no = int(dpid%2) + 1
+                else :
+                    print("Could Not Find The Correct Output Port")
+                    return
         else :
             print("\n Prefix Match Unsuccessful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst)
             if switch_type == "core" :
@@ -273,7 +276,7 @@ class FTRouter(app_manager.RyuApp):
             return port_list[dpid%2]
         elif len(port_list) > 0 : 
             return port_list[0]
-        elif dst in self.ip_datapath :
+        elif dst in self.ip_datapath and self.ip_datapath[dst][0] == dpid:
             return self.ip_datapath[dst][1]
         return 0
         
