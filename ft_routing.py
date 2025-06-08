@@ -216,7 +216,7 @@ class FTRouter(app_manager.RyuApp):
 
             suffixMatched = self.suffix_match(dst, dpid)
 
-            port_no = self.getOutputPortAfterSuffix(dpid,dst, suffixMatched)
+            port_no = self.getOutputPortAfterSuffix(dst, dpid, suffixMatched)
     
             if port_no == 0:
                 print("\n No correct Port Available On The Switch")
