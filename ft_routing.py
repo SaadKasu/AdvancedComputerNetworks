@@ -198,7 +198,7 @@ class FTRouter(app_manager.RyuApp):
         src = pkt.src
         dst = pkt.dst
         print("\nThe Host - ", src, " is at Switch - ", dpid, " at port - ", in_port)
-        print("\nHandling an IP Request SRC IP : %s DST IP : %s In_Port : %s",src,dst, in_port)
+        print("\nHandling an IP Request SRC IP : %s DST IP : %s In_Port : %s DP Id : %s",src , dst, in_port, dpid)
 
         port_type = ""
         switch_type = ""
@@ -209,33 +209,30 @@ class FTRouter(app_manager.RyuApp):
             switch_type = "aggr"
         else :
             switch_type = "core"
-        """
-        if switch_type != "core" and (in_port == 1 or in_port == 2):
-            port_type = "up"
-        else :
-            port_type = "down"
-        """
 
         if self.prefix_match(dst, dpid) :
+
             print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst, " Src - ", src)
 
-            port_no = self.suffix_match(dst, dpid)
-            print("\n Port No. ", port_no)
+            suffixMatched = self.suffix_match(dst, dpid)
+
+            port_no = self.getOutputPortAfterSuffix(dpid,dst, suffixMatched)
+    
             if port_no == 0:
-                if switch_type == "edge" :
-                    print ("On Edge Switch But Wrong Subnet")
-                    port_no = int(dpid%2) + 1
-                else :
-                    print("Could Not Find The Correct Output Port")
-                    return
+                print("\n No correct Port Available On The Switch")
+                return
+
         else :
+
             print("\n Prefix Match Unsuccessful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst)
+
             if switch_type == "core" :
-                pod_num = int(dst[3:4])
-                port_no = pod_num + 1
+                port_no = self.getOutputPortNoPrefix(dst, dpid)
             else :
                 port_no = int(dpid%2) + 1
+
         print("\n Switch Type - ",switch_type, " Out Port - ", port_no, )
+
         self.add_flow (self.switch_datapath[dpid],
         10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
         [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
@@ -266,6 +263,53 @@ class FTRouter(app_manager.RyuApp):
         return dp_ip[0:4] == dst[0:4]
 
     def suffix_match(self, dst, dpid) :
+
+        dp_ip = self.dpid_ip[dpid]
+        return dp_ip[0:7] == dst[0:7]
+
+
+    def getOutputPortAfterSuffix(self, dst, dpid, suffixMatched) :
+        
+        if suffixMatched :
+            if dst in self.ip_datapath and self.ip_datapath[dst][0] == dpid:
+                return self.ip_datapath[dst][1]
+            return 0
+
+        port_list = []
+        neighbours = self.dpid_neighbours [dpid]
+        for neigh_dpid in neighbours :
+            neighbour_ip = self.dpid_ip[neigh_dpid]
+            if neighbour_ip[0:7] == dst[0:7]:
+                port_list.append(neighbours[neigh_dpid])
+
+        print("\n Port List - ", port_list)
+        print("\n Ip Data Path - ", self.ip_datapath)
+
+        if len(port_list) > 1 :
+            return port_list[dpid%2]
+        elif len(port_list) > 0 : 
+            return port_list[0]
+        return 0
+
+
+    def getOutputPortNoPrefix(self, dst, dpid):
+
+        port_list = []
+        neighbours = self.dpid_neighbours [dpid]
+        for neigh_dpid in neighbours :
+            neighbour_ip = self.dpid_ip[neigh_dpid]
+            if neighbour_ip[0:4] == dst[0:4]:
+                port_list.append(neighbours[neigh_dpid])
+
+        if len(port_list) > 1 :
+            return port_list[dpid%2]
+        elif len(port_list) > 0 : 
+            return port_list[0]
+
+        return 0
+            
+
+"""
         port_list = []
         neighbours = self.dpid_neighbours [dpid]
         for neigh_dpid in neighbours :
@@ -281,6 +325,7 @@ class FTRouter(app_manager.RyuApp):
         elif dst in self.ip_datapath and self.ip_datapath[dst][0] == dpid:
             return self.ip_datapath[dst][1]
         return 0
+"""
         
 
     def handle_arp(self, datapath, pkt, in_port, eth):
