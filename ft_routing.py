@@ -309,7 +309,7 @@ class FTRouter(app_manager.RyuApp):
         return 0
             
 
-"""
+        """
         port_list = []
         neighbours = self.dpid_neighbours [dpid]
         for neigh_dpid in neighbours :
@@ -325,7 +325,7 @@ class FTRouter(app_manager.RyuApp):
         elif dst in self.ip_datapath and self.ip_datapath[dst][0] == dpid:
             return self.ip_datapath[dst][1]
         return 0
-"""
+        """
         
 
     def handle_arp(self, datapath, pkt, in_port, eth):
