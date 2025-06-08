@@ -289,7 +289,7 @@ class FTRouter(app_manager.RyuApp):
             return port_list[dpid%2]
         elif len(port_list) > 0 : 
             return port_list[0]
-        return 0
+        return int(dpid%2) + 1
 
 
     def getOutputPortNoPrefix(self, dst, dpid):
