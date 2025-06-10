@@ -284,6 +284,7 @@ class FTRouter(app_manager.RyuApp):
         port_no = 0
         
         prefixTable = self.dpid_prefix[dpid]
+        suffixTable = self.dpid_suffix[dpid]
         
         if switchType == "core" and dst[0:4] in prefixTable :
             print("\n In if condition core switch with port no - ", port_no)
@@ -315,7 +316,7 @@ class FTRouter(app_manager.RyuApp):
     
             return port_no
 
-        port_no = prefixTable[dst[7:8]]
+        port_no = suffixTable[dst[7:8]]
 
         self.add_flow (self.switch_datapath[dpid],
         5 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
