@@ -285,22 +285,22 @@ class FTRouter(app_manager.RyuApp):
         prefixTable = self.dpid_prefix[dpid]
         
         if switchType == "core" and dst[0:4] in prefixTable :
-                print("\n In if condition core switch with port no - ", port_no)
-                port_no = prefixTable[dst[0:4]]
+            print("\n In if condition core switch with port no - ", port_no)
+            port_no = prefixTable[dst[0:4]]
 
-                self.add_flow (self.switch_datapath[dpid],
-        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
-        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+            self.add_flow (self.switch_datapath[dpid],
+    10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+    [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
 
-                return port_no        
+            return port_no        
 
         elif switchType == "aggr" and dst[0:7] in prefixTable :
-                print("\n In elif condition aggr switch with port no - ", port_no)
-                port_no = prefixTable[dst[0:7]]
-        
-                self.add_flow (self.switch_datapath[dpid],
-        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
-        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+            print("\n In elif condition aggr switch with port no - ", port_no)
+            port_no = prefixTable[dst[0:7]]
+    
+            self.add_flow (self.switch_datapath[dpid],
+    10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+    [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
 
             return port_no
             
