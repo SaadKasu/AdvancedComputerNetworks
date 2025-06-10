@@ -123,16 +123,16 @@ class FTRouter(app_manager.RyuApp):
 
         for switchId in self.dpid_neighbours :
             
-            if switch.dp.id in self.edge_dpid :
+            if switchId in self.edge_dpid :
                 switch_type = "edge"
-            elif switch.dp.id in self.aggr_dpid :
+            elif switchId in self.aggr_dpid :
                 switch_type = "aggr"
             else:
-                switch_type = "core"
+                switchId = "core"
             
             self.generate_Prefix_And_Suffix_Tables(switchId, switch_type)
             neighbours = self.dpid_neighbours [switchId]
-            print("\n The neighbours of switch - ", switchId, " Ip of the switch - ", self.dpid_ip[switchId], " is : ")
+            print("\n The neighbours of switch - ", switchId, " with switch type - ",switch_type," Ip of the switch - ", self.dpid_ip[switchId], " is : ")
             for key in neighbours :
                 print("\n Neighbour - ",key, " At Port - ", neighbours[key])
 
