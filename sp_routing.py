@@ -303,10 +303,10 @@ class SPRouter(app_manager.RyuApp):
 
     def handle_arp_reply_from_request(self, datapath, in_port, eth, arp_pkt):
 
-        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
-
         dst_mac = self.arp_table[arp_pkt.src_ip][0]
         src_mac = self.arp_table[arp_pkt.dst_ip][0]
+
+        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
