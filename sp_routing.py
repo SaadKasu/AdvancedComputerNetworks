@@ -130,7 +130,7 @@ class SPRouter(app_manager.RyuApp):
             poped_node = heapq.heappop(queue)
             curr_dist = poped_node[0]
             curr_switch = poped_node[1]
-        print("\nPrev Array - ",prev, "\n Dist Array, ", dist)
+        #print("\nPrev Array - ",prev, "\n Dist Array, ", dist)
         path = []
         previousNode = prev[destination]
         #self.path_between_switches[source].setdefault(destination,[])
