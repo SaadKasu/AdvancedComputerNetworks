@@ -181,7 +181,7 @@ class FTRouter(app_manager.RyuApp):
         if src not in self.ip_datapath:
             self.ip_datapath[src]= (dpid, in_port)
         if src not in self.arp_table:
-            self.arp_table[src] = (eth.src, in_port)
+            self.arp_table[src] = eth.src
 
         #print(" IP data path - ", self.ip_datapath)
 
@@ -243,7 +243,7 @@ class FTRouter(app_manager.RyuApp):
     def forwardPacket(self, dpid, msg, eth_pkt, src, dst, pkt, port_no) :
 
         datapath = self.switch_datapath[dpid]
-        eth_pkt = ethernet.ethernet(dst=self.arp_table[dst][0], src=self.arp_table[src][0], ethertype=eth_pkt.ethertype)
+        eth_pkt = ethernet.ethernet(dst=self.arp_table[dst], src=self.arp_table[src], ethertype=eth_pkt.ethertype)
         ipv4_pkt = ipv4.ipv4(dst=dst, src=src, proto=pkt.proto)
         pkt = packet.Packet()            
         pkt.add_protocol(eth_pkt)
