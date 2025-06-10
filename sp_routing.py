@@ -287,7 +287,7 @@ class SPRouter(app_manager.RyuApp):
         if arp_pkt.opcode == arp.ARP_REQUEST : 
             self.handle_arp_request(datapath, in_port, eth, arp_pkt)
         elif arp_pkt.opcode == arp.ARP_REPLY:
-            self.handle_arp_reply(datapath, in_port, eth, arp_pkt)
+            self.handle_arp_reply_from_reply(datapath, in_port, eth, arp_pkt)
 
 
     def handle_arp_request(self, datapath, in_port, eth, arp_pkt):
@@ -296,17 +296,17 @@ class SPRouter(app_manager.RyuApp):
 
         if dst_ip in self.arp_table:
         # We know the MAC: send ARP reply directly
-            self.handle_arp_reply(datapath, in_port, eth, arp_pkt)
+            self.handle_arp_reply_from_request(datapath, in_port, eth, arp_pkt)
         else:
             # Unknown: flood request to all edge switches
             self.flood_arp(datapath, eth, arp_pkt)
 
-    def handle_arp_reply(self, datapath, in_port, eth, arp_pkt):
+    def handle_arp_reply_from_request(self, datapath, in_port, eth, arp_pkt):
 
         self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
 
-        dst_mac = self.arp_table[arp_pkt.src_ip]
-        src_mac = self.arp_table[arp_pkt.dst_ip]
+        dst_mac = self.arp_table[arp_pkt.src_ip][0]
+        src_mac = self.arp_table[arp_pkt.dst_ip][0]
 
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
@@ -321,6 +321,38 @@ class SPRouter(app_manager.RyuApp):
             dst_ip=arp_pkt.src_ip))
 
         pkt.serialize()
+
+        actions = [datapath.ofproto_parser.OFPActionOutput(in_port)]
+        out = datapath.ofproto_parser.OFPPacketOut(
+            datapath=datapath,
+            in_port=datapath.ofproto.OFPP_CONTROLLER,
+            buffer_id=datapath.ofproto.OFP_NO_BUFFER,
+            actions=actions,
+            data=pkt.data)
+        datapath.send_msg(out)
+
+    def handle_arp_reply_from_reply(self, datapath, in_port, eth, arp_pkt):
+
+        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+
+        src_mac = self.arp_table[arp_pkt.src_ip][0]
+        dst_mac = self.arp_table[arp_pkt.dst_ip][0]
+
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_ARP,
+            dst=dst_mac,
+            src=src_mac))
+        pkt.add_protocol(arp.arp(
+            opcode=arp.ARP_REPLY,
+            src_mac=src_mac,
+            dst_ip=arp_pkt.dst_ip,
+            dst_mac=dst_mac,
+            src_ip=arp_pkt.src_ip))
+
+        pkt.serialize()
+        datapath = self.switch_datapath[self.ip_datapath[arp_pkt.dst_ip][0]]
+        in_port = self.ip_datapath[arp_pkt.dst_ip][1]
 
         actions = [datapath.ofproto_parser.OFPActionOutput(in_port)]
         out = datapath.ofproto_parser.OFPPacketOut(
