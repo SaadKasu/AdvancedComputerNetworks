@@ -34,6 +34,7 @@ from ryu.topology.api import get_switch, get_link
 from ryu.app.wsgi import ControllerBase
 
 import topo
+import random
 
 
 class FTRouter(app_manager.RyuApp):
