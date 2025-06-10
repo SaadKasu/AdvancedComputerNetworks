@@ -116,7 +116,7 @@ class SPRouter(app_manager.RyuApp):
         poped_node = heapq.heappop(queue)
         curr_dist = poped_node[0]
         curr_switch = poped_node[1]
-        while curr_switch != destination and queue: 
+        while queue: 
             visitedNodes.append(curr_switch)
             #self.distance_between_switches[source][curr_switch] = dist[curr_switch]
             for neighbour in self.dpid_neighbours[curr_switch]:
@@ -126,6 +126,8 @@ class SPRouter(app_manager.RyuApp):
                     prev[neighbour] = (curr_switch, self.dpid_neighbours[curr_switch][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
             poped_node = heapq.heappop(queue)
+            if curr_switch == dst :
+                break
             curr_dist = poped_node[0]
             curr_switch = poped_node[1]
 
