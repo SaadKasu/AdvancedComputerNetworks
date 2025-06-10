@@ -125,7 +125,7 @@ class SPRouter(app_manager.RyuApp):
                     dist[neighbour] = nextDist
                     prev[neighbour] = (curr_switch, self.dpid_neighbours[curr_switch][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
-            if curr_switch == dst :
+            if curr_switch == destination :
                 break
             poped_node = heapq.heappop(queue)
             curr_dist = poped_node[0]
