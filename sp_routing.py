@@ -135,7 +135,8 @@ class SPRouter(app_manager.RyuApp):
         previousNode = prev[destination]
         #self.path_between_switches[source].setdefault(destination,[])
         while previousNode[0] is not None :
-            path.insert(0, previousNode)
+            if previousNode[0] != destination
+                path.insert(0, previousNode)
             destination = prev[destination][0]
             if destination is not None : 
                 previousNode = prev[destination]
@@ -239,7 +240,7 @@ class SPRouter(app_manager.RyuApp):
             src_port = in_port
 
             path = self.dijkstra(src_sw, dst_sw)
-            #epath.append([dst_sw, dst_port])
+            path.append([dst_sw, dst_port])
 
             print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
