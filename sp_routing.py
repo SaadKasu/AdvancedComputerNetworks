@@ -306,7 +306,7 @@ class SPRouter(app_manager.RyuApp):
         dst_mac = self.arp_table[arp_pkt.src_ip][0]
         src_mac = self.arp_table[arp_pkt.dst_ip][0]
 
-        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst)
+        self.logger.info("Handling an ARP Reply SRC IP : %s DST IP : %s In_Port : %s SRC Mac : %s DST Mac : %s Map Src : %s Map Dst",arp_pkt.src_ip,arp_pkt.dst_ip, in_port, eth.src, eth.dst, src_mac, dst_mac)
 
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
