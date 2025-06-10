@@ -135,7 +135,7 @@ class SPRouter(app_manager.RyuApp):
         previousNode = prev[destination]
         #self.path_between_switches[source].setdefault(destination,[])
         while previousNode[0] is not None :
-            if previousNode[0] != destination
+            if previousNode[0] != destination :
                 path.insert(0, previousNode)
             destination = prev[destination][0]
             if destination is not None : 
