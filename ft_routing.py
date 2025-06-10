@@ -122,12 +122,41 @@ class FTRouter(app_manager.RyuApp):
                 self.dpid_neighbours[src.dpid][dst.dpid] = src.port_no
 
         for switchId in self.dpid_neighbours :
+            
+            if switch.dp.id in self.edge_dpid :
+                switch_type = "edge"
+            elif switch.dp.id in self.aggr_dpid :
+                switch_type = "aggr"
+            else:
+                switch_type = "core"
+            
+            self.generate_Prefix_And_Suffix_Tables(switchId, switch_type)
             neighbours = self.dpid_neighbours [switchId]
             print("\n The neighbours of switch - ", switchId, " Ip of the switch - ", self.dpid_ip[switchId], " is : ")
             for key in neighbours :
                 print("\n Neighbour - ",key, " At Port - ", neighbours[key])
+
+            print("\n The prefix Table is - ",self.dpid_prefix[switchId], "\n The suffix table is - ", self.dpid_suffix[switchId])
                 
-                
+    def generate_Prefix_And_Suffix_Tables(self, switchId, switch_type) :
+
+        ip_addr = self.dpid_ip[switchId]
+        neighbours = self.dpid_neighbours [switchId]
+
+        for neigh_swt in neighbours :
+            neigh_port = neighbours[neigh_swt]
+            if switch_type == "core":
+                prefix = self.dpid_ip[neigh_swt][0:4]
+                self.dpid_prefix[switchId][prefix] = neigh_port
+            else :
+                prefix = self.dpid_ip[neigh_swt][0:7]
+                suffix = ["2","3"]
+                if switch_type == "aggr" and prefix == ip_addr[0:4]
+                    self.dpid_prefix[switchId][prefix] = neigh_port
+                else :
+                    self.dpid_suffix[switchId][random.choice(suffix)] = neigh_port
+
+            
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -236,6 +265,7 @@ class FTRouter(app_manager.RyuApp):
         self.add_flow (self.switch_datapath[dpid],
         10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
         [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+
         self.forwardPacket(dpid, msg, eth_pkt, src, dst, pkt,port_no)
             
             
