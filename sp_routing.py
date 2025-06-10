@@ -116,7 +116,7 @@ class SPRouter(app_manager.RyuApp):
         poped_node = heapq.heappop(queue)
         curr_dist = poped_node[0]
         curr_switch = poped_node[1]
-        while queue: 
+        while True: 
             visitedNodes.append(curr_switch)
             #self.distance_between_switches[source][curr_switch] = dist[curr_switch]
             for neighbour in self.dpid_neighbours[curr_switch]:
@@ -125,9 +125,9 @@ class SPRouter(app_manager.RyuApp):
                     dist[neighbour] = nextDist
                     prev[neighbour] = (curr_switch, self.dpid_neighbours[curr_switch][neighbour])
                     heapq.heappush(queue, (nextDist, neighbour))
-            poped_node = heapq.heappop(queue)
             if curr_switch == dst :
                 break
+            poped_node = heapq.heappop(queue)
             curr_dist = poped_node[0]
             curr_switch = poped_node[1]
         print("\nPrev Array - ",prev, "\n Dist Array, ", dist)
@@ -239,7 +239,7 @@ class SPRouter(app_manager.RyuApp):
             src_port = in_port
 
             path = self.dijkstra(src_sw, dst_sw)
-            path.append([dst_sw, dst_port])
+            #path.append([dst_sw, dst_port])
 
             print("Path between SRC - ",src_sw, " DST - ", dst_sw, " is - ", path)
             
