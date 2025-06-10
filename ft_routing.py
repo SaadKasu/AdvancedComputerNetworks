@@ -243,7 +243,6 @@ class FTRouter(app_manager.RyuApp):
 
         port_type = ""
         switch_type = ""
-        port_no = 0
         
         switch_type = self.get_Switch_Type(dpid)
 
@@ -281,6 +280,8 @@ class FTRouter(app_manager.RyuApp):
         """
 
     def match_Packet(self, src, dst, dpid, switchType) :
+
+        port_no = 0
         
         prefixTable = self.dpid_prefix[dpid]
         
