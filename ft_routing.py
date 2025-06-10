@@ -143,6 +143,8 @@ class FTRouter(app_manager.RyuApp):
 
         ip_addr = self.dpid_ip[switchId]
         neighbours = self.dpid_neighbours [switchId]
+        suffix = ["2","3"]
+        array_index = [0,1]
 
         for neigh_swt in neighbours :
             neigh_port = neighbours[neigh_swt]
@@ -155,7 +157,10 @@ class FTRouter(app_manager.RyuApp):
                 if switch_type == "aggr" and prefix[0:4] == ip_addr[0:4]:
                     self.dpid_prefix[switchId][prefix] = neigh_port
                 else :
-                    self.dpid_suffix[switchId][suffix] = neigh_port
+                    index = random.choice(array_index)
+                    suffix_value = suffix[index]
+                    array_index.pop(index)
+                    self.dpid_suffix[switchId][suffix_value] = neigh_port
 
             
 
