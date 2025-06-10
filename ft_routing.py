@@ -62,6 +62,16 @@ class FTRouter(app_manager.RyuApp):
         self.dpid_suffix = {}
         self.dpid_ip = {}
 
+    def get_Switch_Type (self, switchId) :
+        switch_type = ""
+        if switchId in self.edge_dpid :
+            switch_type = "edge"
+        elif switchId in self.aggr_dpid :
+            switch_type = "aggr"
+        else:
+            switch_type = "core"
+        return switch_type
+
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
@@ -74,7 +84,7 @@ class FTRouter(app_manager.RyuApp):
             self.dpid_neighbours.setdefault(switch.dp.id, {})
             self.switch_datapath[switch.dp.id] = switch.dp
 
-            switch_type = ""
+            switch_type = self.get_Switch_Type(switch.dp.id)
             pod_num = 0
             subnet_num = 0
             start_num = 1
@@ -83,18 +93,15 @@ class FTRouter(app_manager.RyuApp):
             self.dpid_prefix.setdefault(switch.dp.id, {})
             self.dpid_suffix.setdefault(switch.dp.id, {})
             
-            if switch.dp.id in self.edge_dpid :
-                switch_type = "edge"
+            if switch_type == "edge" :
                 pod_num = int((switch.dp.id - self.edge_dpid[0])/2)
                 subnet_num = int((switch.dp.id - self.edge_dpid[0])%2)
                 start_num = 1
-            elif switch.dp.id in self.aggr_dpid :
-                switch_type = "aggr"
+            elif switch_type == "aggr" :
                 pod_num = int((switch.dp.id - self.aggr_dpid[0])/2)
                 subnet_num = int((switch.dp.id - self.aggr_dpid[0])%2) + 2
                 start_num = 1
             else :
-                switch_type = "core"
                 pod_num = 4
                 subnet_num = int((switch.dp.id - self.core_dpid[0])/2) + 1
                 start_num = int((switch.dp.id - self.core_dpid[0])%2) + 1
@@ -124,12 +131,7 @@ class FTRouter(app_manager.RyuApp):
 
         for switchId in self.dpid_neighbours :
             
-            if switchId in self.edge_dpid :
-                switch_type = "edge"
-            elif switchId in self.aggr_dpid :
-                switch_type = "aggr"
-            else:
-                switch_type = "core"
+            switch_type = self.get_Switch_Type(switchId)
             
             self.generate_Prefix_And_Suffix_Tables(switchId, switch_type)
             neighbours = self.dpid_neighbours [switchId]
@@ -217,6 +219,11 @@ class FTRouter(app_manager.RyuApp):
         if src not in self.arp_table:
             self.arp_table[src] = eth.src
 
+        switch_type = self.get_Switch_Type(dpid)
+
+        if switch_type == "edge" and src not in self.dpid_prefix[dpid] : 
+            self.dpid_prefix[dpid][src] = in_port
+
         #print(" IP data path - ", self.ip_datapath)
 
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
@@ -236,14 +243,15 @@ class FTRouter(app_manager.RyuApp):
 
         port_type = ""
         switch_type = ""
+        port_no = 0
         
-        if dpid in self.edge_dpid :
-            switch_type = "edge"
-        elif dpid in self.aggr_dpid :
-            switch_type = "aggr"
-        else :
-            switch_type = "core"
+        switch_type = self.get_Switch_Type(dpid)
 
+        port_no = self.match_Packet(src, dst, dpid, switch_type)
+
+        self.forwardPacket(dpid, msg, eth_pkt, src, dst, pkt,port_no)
+            
+        """
         if self.prefix_match(dst, dpid) :
 
             print("\n Prefix Match Successful, Dp id IP - ", self.dpid_ip[dpid], " Dst - ",dst, " Src - ", src)
@@ -270,8 +278,49 @@ class FTRouter(app_manager.RyuApp):
         self.add_flow (self.switch_datapath[dpid],
         10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
         [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+        """
 
-        self.forwardPacket(dpid, msg, eth_pkt, src, dst, pkt,port_no)
+    def match_Packet(self, src, dst, dpid, switchType) :
+        
+        prefixTable = self.dpid_prefix[dpid]
+        
+        if switchType == "core" and dst[0:4] in prefixTable :
+                print("\n In if condition core switch with port no - ", port_no)
+                port_no = prefixTable[dst[0:4]]
+
+                self.add_flow (self.switch_datapath[dpid],
+        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+
+                return port_no        
+
+        elif switchType == "aggr" and dst[0:7] in prefixTable :
+                print("\n In elif condition aggr switch with port no - ", port_no)
+                port_no = prefixTable[dst[0:7]]
+        
+                self.add_flow (self.switch_datapath[dpid],
+        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+
+            return port_no
+            
+        elif switchType == "edge" and dst in prefixTable :
+            print("\n In elif condition edge switch with port no - ", port_no)
+            port_no = prefixTable[dst]
+
+            self.add_flow (self.switch_datapath[dpid],
+        10 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+    
+            return port_no
+
+        port_no = prefixTable[dst[7:8]]
+
+        self.add_flow (self.switch_datapath[dpid],
+        5 , self.switch_datapath[dpid].ofproto_parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=dst),
+        [self.switch_datapath[dpid].ofproto_parser.OFPActionOutput(port_no)])
+
+        return port_no
             
             
 
