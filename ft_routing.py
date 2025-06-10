@@ -152,7 +152,7 @@ class FTRouter(app_manager.RyuApp):
                 self.dpid_prefix[switchId][prefix] = neigh_port
             else :
                 prefix = self.dpid_ip[neigh_swt][0:7]
-                if switch_type == "aggr" and prefix == ip_addr[0:4]:
+                if switch_type == "aggr" and prefix[0:4] == ip_addr[0:4]:
                     self.dpid_prefix[switchId][prefix] = neigh_port
                 else :
                     self.dpid_suffix[switchId][suffix] = neigh_port
