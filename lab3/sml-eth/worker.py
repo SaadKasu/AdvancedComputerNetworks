@@ -24,7 +24,7 @@ from lib.test import CreateTestData, RunIntTest
 from lib.worker import *
 from scapy.all import Packet
 
-NUM_ITER   = 1     # TODO: Make sure your program can handle larger values
+NUM_ITER   = 2     # TODO: Make sure your program can handle larger values
 CHUNK_SIZE = None  # TODO: Define me
 
 class SwitchML(Packet):
