@@ -71,7 +71,7 @@ def RunControlPlane(net):
     sw = net.get('s1')
     
     for i in range(NUM_WORKERS):
-        mac = getWorkerMAC(i))
+        mac = getWorkerMAC(i)
         port = i
         sw.insertTableEntry(table_name='TheIngress.ethernet_table',
                         match_fields={'hdr.eth.dstAddr': mac},
