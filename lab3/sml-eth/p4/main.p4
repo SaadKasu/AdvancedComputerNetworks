@@ -92,7 +92,7 @@ control TheIngress(inout headers hdr,
   @atomic
   action aggregate_chunks(){
  	
- 	inout bit<32> sum;
+ 	    bit<32> sum;
         aggregate.read(0, sum);
         aggregate.write(0, sum + 5);
   }
