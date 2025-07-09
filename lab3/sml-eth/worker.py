@@ -23,6 +23,10 @@ from lib.gen import GenInts, GenMultipleOfInRange
 from lib.test import CreateTestData, RunIntTest
 from lib.worker import *
 from scapy.all import Packet
+from scapy.fields import IntField, XIntField, FieldListField
+from scapy.layers.l2 import Ether
+from scapy.all import Ether, Raw, sendp
+import socket
 
 NUM_ITER   = 1     # TODO: Make sure your program can handle larger values
 CHUNK_SIZE = None  # TODO: Define me
@@ -31,6 +35,9 @@ class SwitchML(Packet):
     name = "SwitchMLPacket"
     fields_desc = [
         # TODO: Implement me
+        XIntField("chunk_count", 0),
+    	XIntField("chunk_size", 0),
+    	FieldListField("data_chunk", [], XIntField("", 0))
     ]
 
 def AllReduce(iface, rank, data, result):
@@ -45,7 +52,43 @@ def AllReduce(iface, rank, data, result):
     This function is blocking, i.e. only returns with a result or error
     """
     # TODO: Implement me
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    chunkStart = 0
+    chunkEnd = CHUNK_SIZE - 1
+    dataLength = len(data)
+    
+    for chunkCount in range(0, (dataLength // CHUNK_SIZE)):
+    	
+    	chunkStart = chunkCount * CHUNK_SIZE
+    	chunkEnd = (chunkCount + 1) * CHUNK_SIZE
+    	
+    	chunk = data[chunkStart:chunkEnd]
+    	
+    	sml_pkt = SwitchML(
+    			chunk_count=chunkCount+1, 
+    			chunk_size = CHUNK_SIZE,
+    			data_chunk=chunk)
+    	
+    	eth_pkt = Ether(src=getWorkerMAC(rank),dst=getWorkerMAC(rank), type= ETH_TYPE_SML ) / sml_pkt
+    	
+    	
+    	eth_pkt.show()
+    	
+    	raw_bytes = bytes(eth_pkt)
+    	
+    	target_address = (getWorkerIP(rank), rank+1)
+    	
+    	sock.sendto(raw_bytes, target_address)
     pass
+
+def GetRankOrExit():
+	rank = int(sys.argv[1])
+	if rank == None or rank < 0:
+		sys.exit()
+		return 0
+	else:
+		return rank
 
 def main():
     iface = 'eth0'

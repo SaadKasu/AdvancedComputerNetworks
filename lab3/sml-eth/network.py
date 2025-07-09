@@ -27,16 +27,26 @@ import os
 
 NUM_WORKERS = 2 # TODO: Make sure your program can handle larger values
 
+# Simple logic to allocate IP and MAC addresses based on the worker ID
+def getWorkerIP(wid):
+    return "10.0.0.%d" % (wid + 1)
+
+def getWorkerMAC(wid):
+    return "00:00:00:00:01:%02x" % (wid + 1)
+
 class SMLTopo(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
         # TODO: Implement me. Feel free to modify the constructor signature
         # NOTE: Make sure worker names are consistent with RunWorkers() below
-    sw = self.addSwitch('s1')
+    # Create the switch
+        sw = self.addSwitch('s1')
 
-    for i in range(NUM_WORKERS):
-        worker = self.addHost('w%d'%i, ip = '10.0.0.%d'%i, mac='00:00:00:00:00:0%d'%i)
-        self.addLink(worker,sw,port2 = i)
+        # Create the workers
+        for i in range(NUM_WORKERS):
+            worker = self.addHost(
+                'w%d' % i, ip=getWorkerIP(i), mac=getWorkerMAC(i))
+            self.addLink(worker, sw, port2=i)
 
 def RunWorkers(net):
     """
@@ -59,9 +69,23 @@ def RunControlPlane(net):
     # TODO: Implement me (if needed)
     # use functions already defined.
     sw = net.get('s1')
-    sw.insertTableEntry
-    # Need table entry to multicast group along with a table entry for broadcast. to cover arp. Very useful since once done with aggregation you need to multicast.
-    pass
+    
+    for i in range(NUM_WORKERS):
+        mac = getWorkerMAC(i))
+        port = i
+        sw.insertTableEntry(table_name='TheIngress.ethernet_table',
+                        match_fields={'hdr.eth.dstAddr': mac},
+                        action_name='TheIngress.l2_forward',
+                        action_params={'port': port})
+
+    # Multicast ARP requests
+    sw.insertTableEntry(table_name='TheIngress.ethernet_table',
+                        match_fields={'hdr.eth.dstAddr': 'ff:ff:ff:ff:ff:ff'},
+                        action_name='TheIngress.multicast',
+                        action_params={'mgid': 1})
+    
+    # Use function addMulticastGroup from p4app/src/p4_mininet.py to add a multicast group
+    sw.addMulticastGroup(mgid=1, ports=range(NUM_WORKERS))
 
 topo = SMLTopo() # TODO: Create an SMLTopo instance
 net = P4Mininet(program="p4/main.p4", topo=topo)

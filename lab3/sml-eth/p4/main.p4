@@ -27,20 +27,30 @@
 typedef bit<9>  sw_port_t;   /*< Switch port */
 typedef bit<48> mac_addr_t;  /*< MAC address */
 
+const bit<16> ETH_TYPE_SWITCHML = 0x1234;
+const bit<16> CHUNK_SIZE = 512;
+
+// Ethernet header struct
 header ethernet_t {
-  mac_addr_t srcAddr;
-  mac_addr_t dstAddr;
-  bit<16> etherType;
-  /* TODO: Define me */
+    mac_addr_t dstAddr;
+    mac_addr_t srcAddr;
+    bit<16>   etherType;
+}
+
+header data {
+    bit<32> value;
 }
 
 header sml_t {
-  /* TODO: Define me */
+    bit<32> chunk_count; 
+    bit<32> chunk_size;
 }
 
+// Headers struct
 struct headers {
   ethernet_t eth;
   sml_t sml;
+  data[512] data_chunk;
 }
 
 struct metadata { /* empty */ }
@@ -50,25 +60,83 @@ parser TheParser(packet_in packet,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
   /* TODO: Implement me */
-  state start (transition parse_ethernet;) // Start is not needed just for clean code
 
-  state parse_ethernet( packet.extract(hdr.eth)) //hdr is the header according to our strcut defination
+   // Start state
+  state start {
+    transition parse_ethernet;
+  }
+  
+  // State for parsing Ethernet header 
+  state parse_ethernet {
+  
+    packet.extract(hdr.eth);
+    transition parse_switchml;
+  }
+  
+  state parse_switchml {
+  	packet.extract(hdr.sml);
+  	transition accept;
+  }
 }
 
 control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
 
-  action whatever(){
-
+  register<bit<32>>(1024) aggregate;
+  
+  action drop() {
+    mark_to_drop(standard_metadata);
   }
-        actions ={      // Are defined inside the control
-            whatever;
-        }
+
+  @atomic
+  action aggregate_chunks(){
+ 	
+ 	inout bit<32> sum;
+        aggregate.read(0, sum);
+        aggregate.write(0, sum + 5);
+  }
+
+  // Simple L2 forwarding action
+  action l2_forward(sw_port_t port) {
+    standard_metadata.egress_spec = port;
+  }
+
+  // Multicast action; for ARP requests
+  action multicast(bit<16> mgid) {
+    standard_metadata.mcast_grp = mgid;
+  }
+
+  // Ethernet forwarding table
+  table ethernet_table {
+
+    // Fields to match on and how to match
+    key = {
+      hdr.eth.dstAddr: exact;
+    }
+
+    // Possible actions
+    actions = {
+      l2_forward;
+      multicast;
+      drop;
+      NoAction;
+    }
+
+    // Table size and default action
+    size = 1024;
+    default_action = NoAction();
+  }
+
+
   apply {
-if (hdr.eth.isvalid()){
-ethernet_table.apply();
-}
+
+    if (hdr.eth.isValid() && hdr.sml.isValid()) {
+    
+      ethernet_table.apply();
+    } else {
+      drop();
+    }
   }
 }
 
@@ -92,10 +160,11 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
   }
 }
 
-
 control TheDeparser(packet_out packet, in headers hdr) {
   apply {
     /* TODO: Implement me */
+    // Deparse the Ethernet header
+    packet.emit(hdr.eth);
   }
 }
 
