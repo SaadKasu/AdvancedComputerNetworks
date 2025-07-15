@@ -157,7 +157,7 @@ control TheIngress(inout headers hdr,
  
       // if current_allreduce_id is different, or if workers has not contributed
       if (current_allreduce_id != hdr.sml.allreduce_id ||
-          (current_contribution_mask & ((bit<4>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
+          (current_contribution_mask & ((bit<8>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
         
         // For a new AllReduce ID for this chunk reset the mask and agg values
         if(current_allreduce_id != hdr.sml.allreduce_id) {
