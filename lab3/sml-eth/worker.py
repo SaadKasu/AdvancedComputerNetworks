@@ -51,7 +51,7 @@ def AllReduce(iface, rank, data, result, epoch):
     Log("Total number of elements: %d, Number of chunks: %d" % (total_num_elements, num_chunks))
  
     # Assuming allredduce_id is unique fix values for each operation
-    current_allreduce_id = epoch
+    current_allreduce_id = (epoch << 8) | rank
     for chunk_idx_val in range(num_chunks):
         Log("Processing chunk %d/%d" % (chunk_idx_val + 1, num_chunks))
  
@@ -106,6 +106,11 @@ def AllReduce(iface, rank, data, result, epoch):
  
             # Convert the payload of the data into an integer and log it
             payload_bytes = bytes(response_pkt[SwitchML].payload)
+    
+            header = response_pkt[SwitchML]
+            if header.allreduce_id != current_allreduce_id:
+                Log(f"Ignored stale response with allreduce_id={header.allreduce_id}")
+                continue
             
             if len(payload_bytes) >= 4:
                 payload_int = int.from_bytes(payload_bytes[:4], byteorder='big')
