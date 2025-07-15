@@ -34,7 +34,7 @@ const bit<16> SWITCHML_ETHERTYPE = 0x88F0;
 const int N_WORKERS = 4;
  
 // Max chunk size (C) 
-const int C_CHUNK_SIZE = 8;
+const int C_CHUNK_SIZE = 4;
  
 // Assuming max vec length  of 2048 with CHUNK_SIZE = 2
 // max chunks = 1024 i.e 2048 / Chunk_SIZE
@@ -44,7 +44,7 @@ const int MAX_CHUNKS_IN_VECTOR = 256;
 register<bit<32>>(MAX_CHUNKS_IN_VECTOR * C_CHUNK_SIZE) aggregation_values;
  
 // should be modified according to C_CHUNK_SIZE
-register<bit<8>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
+register<bit<4>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
  
 // Register to store the last AllReduce ID processed for each chunk.
 // To enable reuse of memory and updating aggregations
@@ -66,10 +66,6 @@ header chunk_data_t {
   bit<32> val1;
   bit<32> val2;
   bit<32> val3;
-  bit<32> val4;
-  bit<32> val5;
-  bit<32> val6;
-  bit<32> val7;
 }
  
 // Custom header for SwitchML protocol
@@ -123,13 +119,9 @@ control TheIngress(inout headers hdr,
   bit<32> current_val0 = 0;
   bit<32> current_val1 = 0;
   bit<32> current_val2 = 0;
-  bit<32> current_val3 = 0;
-  bit<32> current_val4 = 0;
-  bit<32> current_val5 = 0;
-  bit<32> current_val6 = 0;
-  bit<32> current_val7 = 0; // values will be added with incrasing C_CHUNK_SIZE
+  bit<32> current_val3 = 0; // values will be added with incrasing C_CHUNK_SIZE
   
-  bit<8> current_contribution_mask; // Use 2 because N_WORKERS = 2
+  bit<4> current_contribution_mask; // Use 2 because N_WORKERS = 2
   bit<16> current_allreduce_id;
   
   
@@ -157,7 +149,7 @@ control TheIngress(inout headers hdr,
  
       // if current_allreduce_id is different, or if workers has not contributed
       if (current_allreduce_id != hdr.sml.allreduce_id ||
-          (current_contribution_mask & ((bit<8>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
+          (current_contribution_mask & ((bit<4>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
         
         // For a new AllReduce ID for this chunk reset the mask and agg values
         if(current_allreduce_id != hdr.sml.allreduce_id) {
@@ -169,10 +161,6 @@ control TheIngress(inout headers hdr,
                 aggregation_values.write(base_agg_index + 1, 0);
                 aggregation_values.write(base_agg_index + 2, 0);
                 aggregation_values.write(base_agg_index + 3, 0);
-                aggregation_values.write(base_agg_index + 4, 0);
-                aggregation_values.write(base_agg_index + 5, 0);
-                aggregation_values.write(base_agg_index + 6, 0);
-                aggregation_values.write(base_agg_index + 7, 0);
               }
         }
  
@@ -183,10 +171,6 @@ control TheIngress(inout headers hdr,
           aggregation_values.read(current_val1, base_agg_index + 1);
           aggregation_values.read(current_val2, base_agg_index + 2);
           aggregation_values.read(current_val3, base_agg_index + 3);
-          aggregation_values.read(current_val0, base_agg_index + 4);
-          aggregation_values.read(current_val1, base_agg_index + 5);
-          aggregation_values.read(current_val2, base_agg_index + 6);
-          aggregation_values.read(current_val3, base_agg_index + 7);
           // Based on ChUNK_SIZE, we can have more values here
         }
         
@@ -195,25 +179,17 @@ control TheIngress(inout headers hdr,
         current_val1 = current_val1 + hdr.chunk_data.val1;
         current_val2 = current_val2 + hdr.chunk_data.val2;
         current_val3 = current_val3 + hdr.chunk_data.val3;
-        current_val4 = current_val4 + hdr.chunk_data.val4;
-        current_val5 = current_val5 + hdr.chunk_data.val5;
-        current_val6 = current_val6 + hdr.chunk_data.val6;
-        current_val7 = current_val7 + hdr.chunk_data.val7;
         // More agreegation with increasing C_CHUNK_SIZE
  
         // Update the contribution mask to include this worker
         // update the worker's bit in the mask
-        current_contribution_mask = current_contribution_mask | ((bit<8>)(1) << hdr.sml.worker_rank); // Set worker's bit
+        current_contribution_mask = current_contribution_mask | ((bit<4>)(1) << hdr.sml.worker_rank); // Set worker's bit
  
         @atomic {
           aggregation_values.write(base_agg_index, current_val0);
           aggregation_values.write(base_agg_index + 1, current_val1);
           aggregation_values.write(base_agg_index + 2, current_val2);
           aggregation_values.write(base_agg_index + 3, current_val3);
-          aggregation_values.write(base_agg_index + 4, current_val4);
-          aggregation_values.write(base_agg_index + 5, current_val5);
-          aggregation_values.write(base_agg_index + 6, current_val6);
-          aggregation_values.write(base_agg_index + 7, current_val7);
           // More agreegation updates increasing C_CHUNK_SIZE
  
           chunk_contributions.write((bit<32>)hdr.sml.chunk_idx, current_contribution_mask);
@@ -233,10 +209,6 @@ control TheIngress(inout headers hdr,
         hdr.chunk_data.val1 = current_val1;
         hdr.chunk_data.val2 = current_val2;
         hdr.chunk_data.val3 = current_val3;
-        hdr.chunk_data.val4 = current_val4;
-        hdr.chunk_data.val5 = current_val5;
-        hdr.chunk_data.val6 = current_val6;
-        hdr.chunk_data.val7 = current_val7;
         // More aggregation with increasing C_CHUNK_SIZE
  
       } else {
