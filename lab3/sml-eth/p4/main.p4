@@ -34,7 +34,7 @@ const bit<16> SWITCHML_ETHERTYPE = 0x88F0;
 const int N_WORKERS = 4;
  
 // Max chunk size (C) 
-const int C_CHUNK_SIZE = 4;
+const int C_CHUNK_SIZE = 2;
  
 // Assuming max vec length  of 2048 with CHUNK_SIZE = 2
 // max chunks = 1024 i.e 2048 / Chunk_SIZE
@@ -64,8 +64,6 @@ header ethernet_t {
 header chunk_data_t {
   bit<32> val0;
   bit<32> val1;
-  bit<32> val2;
-  bit<32> val3;
 }
  
 // Custom header for SwitchML protocol
@@ -118,8 +116,6 @@ control TheIngress(inout headers hdr,
   // Temporal variables to hold register values during atomic access
   bit<32> current_val0 = 0;
   bit<32> current_val1 = 0;
-  bit<32> current_val2 = 0;
-  bit<32> current_val3 = 0; // values will be added with incrasing C_CHUNK_SIZE
   
   bit<4> current_contribution_mask; // Use 2 because N_WORKERS = 2
   bit<16> current_allreduce_id;
@@ -159,8 +155,6 @@ control TheIngress(inout headers hdr,
               @atomic {
                 aggregation_values.write(base_agg_index, 0);
                 aggregation_values.write(base_agg_index + 1, 0);
-                aggregation_values.write(base_agg_index + 2, 0);
-                aggregation_values.write(base_agg_index + 3, 0);
               }
         }
  
@@ -169,16 +163,12 @@ control TheIngress(inout headers hdr,
         @atomic { // We simply separate the blocks for the different register arrays
           aggregation_values.read(current_val0, base_agg_index);
           aggregation_values.read(current_val1, base_agg_index + 1);
-          aggregation_values.read(current_val2, base_agg_index + 2);
-          aggregation_values.read(current_val3, base_agg_index + 3);
           // Based on ChUNK_SIZE, we can have more values here
         }
         
         // Perform the aggregation (Addition for AllReduce SUM)
         current_val0 = current_val0 + hdr.chunk_data.val0;
         current_val1 = current_val1 + hdr.chunk_data.val1;
-        current_val2 = current_val2 + hdr.chunk_data.val2;
-        current_val3 = current_val3 + hdr.chunk_data.val3;
         // More agreegation with increasing C_CHUNK_SIZE
  
         // Update the contribution mask to include this worker
@@ -188,8 +178,6 @@ control TheIngress(inout headers hdr,
         @atomic {
           aggregation_values.write(base_agg_index, current_val0);
           aggregation_values.write(base_agg_index + 1, current_val1);
-          aggregation_values.write(base_agg_index + 2, current_val2);
-          aggregation_values.write(base_agg_index + 3, current_val3);
           // More agreegation updates increasing C_CHUNK_SIZE
  
           chunk_contributions.write((bit<32>)hdr.sml.chunk_idx, current_contribution_mask);
@@ -207,8 +195,6 @@ control TheIngress(inout headers hdr,
         // L3, the switch should store and retrieve it
         hdr.chunk_data.val0 = current_val0;
         hdr.chunk_data.val1 = current_val1;
-        hdr.chunk_data.val2 = current_val2;
-        hdr.chunk_data.val3 = current_val3;
         // More aggregation with increasing C_CHUNK_SIZE
  
       } else {

@@ -12,7 +12,7 @@ from scapy.all import sendp
 import time
  
 NUM_ITER   = 2     # TODO: Make sure your program can handle larger values
-CHUNK_SIZE = 4  # TODO: Define me
+CHUNK_SIZE = 2  # TODO: Define me
  
 # Custom Ethertype for out protocol 
 SWITCHML_ETHERTYPE = 0x88F0 
