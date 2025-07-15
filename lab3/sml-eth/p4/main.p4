@@ -129,7 +129,7 @@ control TheIngress(inout headers hdr,
   bit<32> current_val6 = 0;
   bit<32> current_val7 = 0; // values will be added with incrasing C_CHUNK_SIZE
   
-  bit<4> current_contribution_mask; // Use 2 because N_WORKERS = 2
+  bit<8> current_contribution_mask; // Use 2 because N_WORKERS = 2
   bit<16> current_allreduce_id;
   
   
