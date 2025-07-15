@@ -160,7 +160,7 @@ control TheIngress(inout headers hdr, inout metadata meta, inout standard_metada
         current_val6 = current_val6 + hdr.chunk_data.val6;
         current_val7 = current_val7 + hdr.chunk_data.val7;
 
-        current_contribution_mask |= ((bit<4>)(1) << hdr.sml.worker_rank);
+        current_contribution_mask = current_contribution_mask | ((bit<4>)(1) << hdr.sml.worker_rank);
 
         @atomic {
           aggregation_values.write(base_idx, current_val0);
