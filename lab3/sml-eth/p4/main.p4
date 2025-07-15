@@ -129,14 +129,14 @@ control TheIngress(inout headers hdr, inout metadata meta, inout standard_metada
         if (current_allreduce_id != hdr.sml.allreduce_id) {
           current_contribution_mask = 0;
             @atomic {
-                aggregation_values.write(base_agg_index, 0);
-                aggregation_values.write(base_agg_index + 1, 0);
-                aggregation_values.write(base_agg_index + 2, 0);
-                aggregation_values.write(base_agg_index + 3, 0);
-                aggregation_values.write(base_agg_index + 4, 0);
-                aggregation_values.write(base_agg_index + 5, 0);
-                aggregation_values.write(base_agg_index + 6, 0);
-                aggregation_values.write(base_agg_index + 7, 0);
+                aggregation_values.write(base_idx, 0);
+                aggregation_values.write(base_idx + 1, 0);
+                aggregation_values.write(base_idx + 2, 0);
+                aggregation_values.write(base_idx + 3, 0);
+                aggregation_values.write(base_idx + 4, 0);
+                aggregation_values.write(base_idx + 5, 0);
+                aggregation_values.write(base_idx + 6, 0);
+                aggregation_values.write(base_idx + 7, 0);
               }
         }
 
