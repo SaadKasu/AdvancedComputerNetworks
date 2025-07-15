@@ -34,7 +34,7 @@ const bit<16> SWITCHML_ETHERTYPE = 0x88F0;
 const int N_WORKERS = 4;
  
 // Max chunk size (C) 
-const int C_CHUNK_SIZE = 4;
+const int C_CHUNK_SIZE = 8;
  
 // Assuming max vec length  of 2048 with CHUNK_SIZE = 2
 // max chunks = 1024 i.e 2048 / Chunk_SIZE
