@@ -106,11 +106,6 @@ def AllReduce(iface, rank, data, result, epoch):
  
             # Convert the payload of the data into an integer and log it
             payload_bytes = bytes(response_pkt[SwitchML].payload)
-    
-            header = response_pkt[SwitchML]
-            if header.allreduce_id != current_allreduce_id:
-                Log(f"Ignored stale response with allreduce_id={header.allreduce_id}")
-                continue
             
             if len(payload_bytes) >= 4:
                 payload_int = int.from_bytes(payload_bytes[:4], byteorder='big')
