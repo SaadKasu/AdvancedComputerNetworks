@@ -34,11 +34,11 @@ const bit<16> SWITCHML_ETHERTYPE = 0x88F0;
 const int N_WORKERS = 4;
  
 // Max chunk size (C) 
-const int C_CHUNK_SIZE = 8;
+const int C_CHUNK_SIZE = 4;
  
 // Assuming max vec length  of 2048 with CHUNK_SIZE = 2
 // max chunks = 1024 i.e 2048 / Chunk_SIZE
-const int MAX_CHUNKS_IN_VECTOR = 1024;
+const int MAX_CHUNKS_IN_VECTOR = 256;
  
 // Register to store the aggregated sum for each element in a chunk
 register<bit<32>>(MAX_CHUNKS_IN_VECTOR * C_CHUNK_SIZE) aggregation_values;
