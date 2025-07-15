@@ -128,6 +128,16 @@ control TheIngress(inout headers hdr, inout metadata meta, inout standard_metada
 
         if (current_allreduce_id != hdr.sml.allreduce_id) {
           current_contribution_mask = 0;
+            @atomic {
+                aggregation_values.write(base_agg_index, 0);
+                aggregation_values.write(base_agg_index + 1, 0);
+                aggregation_values.write(base_agg_index + 2, 0);
+                aggregation_values.write(base_agg_index + 3, 0);
+                aggregation_values.write(base_agg_index + 4, 0);
+                aggregation_values.write(base_agg_index + 5, 0);
+                aggregation_values.write(base_agg_index + 6, 0);
+                aggregation_values.write(base_agg_index + 7, 0);
+              }
         }
 
         @atomic {
@@ -141,14 +151,14 @@ control TheIngress(inout headers hdr, inout metadata meta, inout standard_metada
           aggregation_values.read(current_val7, base_idx + 7);
         }
 
-        current_val0 += hdr.chunk_data.val0;
-        current_val1 += hdr.chunk_data.val1;
-        current_val2 += hdr.chunk_data.val2;
-        current_val3 += hdr.chunk_data.val3;
-        current_val4 += hdr.chunk_data.val4;
-        current_val5 += hdr.chunk_data.val5;
-        current_val6 += hdr.chunk_data.val6;
-        current_val7 += hdr.chunk_data.val7;
+        current_val0 = current_val0 + hdr.chunk_data.val0;
+        current_val1 = current_val1 + hdr.chunk_data.val1;
+        current_val2 = current_val2 + hdr.chunk_data.val2;
+        current_val3 = current_val3 + hdr.chunk_data.val3;
+        current_val4 = current_val4 + hdr.chunk_data.val4;
+        current_val5 = current_val5 + hdr.chunk_data.val5;
+        current_val6 = current_val6 + hdr.chunk_data.val6;
+        current_val7 = current_val7 + hdr.chunk_data.val7;
 
         current_contribution_mask |= ((bit<4>)(1) << hdr.sml.worker_rank);
 
