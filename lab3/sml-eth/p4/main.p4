@@ -104,6 +104,27 @@ control TheIngress(inout headers hdr,
     bit<4> current_contribution_mask;
     bit<16> current_allreduce_id; 
 
+      // Ethernet forwarding table
+  table ethernet_table {
+
+    // Fields to match on and how to match
+    key = {
+      hdr.eth.dstAddr: exact;
+    }
+
+    // Possible actions
+    actions = {
+      l2_forward;
+      multicast;
+      drop;
+      NoAction;
+    }
+
+    // Table size and default action
+    size = 1024;
+    default_action = NoAction();
+  }
+
  apply{
         if(hdr.sml.isValid()){
 
