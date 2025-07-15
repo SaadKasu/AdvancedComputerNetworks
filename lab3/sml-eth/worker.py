@@ -10,7 +10,7 @@ from scapy.all import get_if_list, srp1
 from scapy.all import sendp
 import time
  
-NUM_ITER   = 2     # TODO: Make sure your program can handle larger values
+NUM_ITER   = 1     # TODO: Make sure your program can handle larger values
 CHUNK_SIZE = 4  # TODO: Define me
  
 # Custom Ethertype for out protocol 
