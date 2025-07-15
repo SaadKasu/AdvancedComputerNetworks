@@ -22,23 +22,27 @@
 from lib.gen import GenInts, GenMultipleOfInRange
 from lib.test import CreateTestData, RunIntTest
 from lib.worker import *
-from scapy.all import Packet
-from scapy.fields import IntField, XIntField, FieldListField
+from scapy.all import Packet, bind_layers, get_if_hwaddr, get_if_list, srp1, sendp
+from scapy.fields import IntField, ShortField, FieldListField, ByteField
 from scapy.layers.l2 import Ether
-from scapy.all import Ether, Raw, sendp
-import socket
+import time
 
 NUM_ITER   = 1     # TODO: Make sure your program can handle larger values
-CHUNK_SIZE = None  # TODO: Define me
+CHUNK_SIZE = 4  # TODO: Define me
+
+SWITCHML_ETHERTYPE = 0x88F0 
 
 class SwitchML(Packet):
     name = "SwitchMLPacket"
     fields_desc = [
-        # TODO: Implement me
-        XIntField("chunk_count", 0),
-    	XIntField("chunk_size", 0),
-    	FieldListField("data_chunk", [], XIntField("", 0))
+        ShortField("allreduce_id", 0),    # 2 Byte Unique ID for the all-reduce operation
+        ShortField("chunk_idx", 0),       # 2 Byte Index of the chunk in the all-reduce operation
+        ShortField("num_chunks", 0),      # 2 Byte Total number of chunks in the all-reduce operation
+        ByteField("worker_rank", 0)       # 1 Byte Rank of the worker sending this packet
     ]
+ 
+# Bind the custom SwitchML layer to Ethernet with the custom ethertype
+bind_layers(Ether, SwitchML, type=SWITCHML_ETHERTYPE) # SwitchML follows the Ether Layer when the ether type is oue defined switch ehtertype
 
 def AllReduce(iface, rank, data, result):
     """
@@ -51,36 +55,86 @@ def AllReduce(iface, rank, data, result):
 
     This function is blocking, i.e. only returns with a result or error
     """
+    Log(f"Data: {data}, result: {result}")
+    Log(f"Worker {rank}: AllReduce function entered.") # NEW LOG
+    Log(f"The data here is: {data}")
+    Log(f"Worker {rank}: Starting AllReduce for vector of size {len(data)}, , CHUNK_SIZE={CHUNK_SIZE}")
+
     # TODO: Implement me
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    final_results = []
+    total_num_elements = len(data)
+    num_chunks = total_num_elements // CHUNK_SIZE
+    Log("Total number of elements: %d, Number of chunks: %d" % (total_num_elements, num_chunks))
+    current_allreduce_id = epoch # Assign unique id to each operation
+    for chunk_idx_val in range(num_chunks):
+        Log("Processing chunk %d/%d" % (chunk_idx_val + 1, num_chunks))
+ 
+        s = chunk_idx_val * CHUNK_SIZE
+        t = s + CHUNK_SIZE
+        chunk_data = data[s:t]  # Getting current chunk
+        Log("chunk_data %s: " % chunk_data)
+
+        # Crafting the switchML packet
+        SwitchMLPacket = SwitchML(
+            allreduce_id=current_allreduce_id,
+            chunk_idx=chunk_idx_val,
+            num_chunks=num_chunks,
+            worker_rank=rank
+        )
     
-    chunkStart = 0
-    chunkEnd = CHUNK_SIZE - 1
-    dataLength = len(data)
-    
-    for chunkCount in range(0, (dataLength // CHUNK_SIZE)):
-    	
-    	chunkStart = chunkCount * CHUNK_SIZE
-    	chunkEnd = (chunkCount + 1) * CHUNK_SIZE
-    	
-    	chunk = data[chunkStart:chunkEnd]
-    	
-    	sml_pkt = SwitchML(
-    			chunk_count=chunkCount+1, 
-    			chunk_size = CHUNK_SIZE,
-    			data_chunk=chunk)
-    	
-    	eth_pkt = Ether(src=getWorkerMAC(rank),dst=getWorkerMAC(rank), type= ETH_TYPE_SML ) / sml_pkt
-    	
-    	
-    	eth_pkt.show()
-    	
-    	raw_bytes = bytes(eth_pkt)
-    	
-    	target_address = (getWorkerIP(rank), rank+1)
-    	
-    	sock.sendto(raw_bytes, target_address)
-    pass
+        Log("SwitchMLPacket details: %r" % SwitchMLPacket.show(dump=True))
+
+        raw_chunk_payload = struct.pack('!' + 'I' * CHUNK_SIZE, *chunk_data)
+        Log("Raw chunk payload: %s" % raw_chunk_payload) # Converts python data into byte object according to network format
+
+        dst_mac_of_switch = 'ff:ff:ff:ff:ff:ff'
+
+        try:
+            eth_frame = Ether(dst=dst_mac_of_switch,
+                              src=get_if_hwaddr(iface),  # Use the MAC address of the interface
+                              type=SWITCHML_ETHERTYPE
+                             ) / SwitchMLPacket / raw_chunk_payload # Creating an ether packet with different layers, ethernet, SwitchML and actual payload
+
+            Log("Crafted Ethernet frame: %s" % eth_frame.show(dump=True))
+ 
+            # Only wait for response on the last chunk
+            response_pkt = srp1(        # Send raw packet and wait for 1 response, if no response response_pkt will be none
+                eth_frame,
+                iface=iface,
+                timeout=10,  # time out for debugging purposes
+                verbose=0
+            )
+            time.sleep(0.05)  # Delay for 50ms to give the switch time to process
+
+        except Exception as e:
+            Log("Error sending packet: %s" % str(e))
+            exit(1)
+        
+        if response_pkt and response_pkt.haslayer(SwitchML):
+            
+            payload_bytes = bytes(response_pkt[SwitchML].payload)
+            
+            if len(payload_bytes) >= 4:         # Checking for atleast 1 32 bit value
+                aggregated_raw_data = bytes(payload_bytes)
+ 
+                # Unpack the aggregated 32-bit integers data
+                aggregated_ints = struct.unpack('!' + 'I' * CHUNK_SIZE, aggregated_raw_data)
+ 
+                Log(f"unpacking aggregated data to: {aggregated_ints}")
+                tem_res = []
+                # Write response results to the result vector
+                for i, val in enumerate(aggregated_ints):
+                    tem_res.append(val)
+ 
+                result[s:t] = tem_res
+                Log(f"result === {result}")
+            else:
+                Log("Payload too short to convert to integer.")
+
+        else:
+            Log("Error: No response received for last chunk %d" % chunk_idx_val)
+            # We assume reliability, so response must be received
+            exit(1)
 
 def GetRankOrExit():
 	rank = int(sys.argv[1])

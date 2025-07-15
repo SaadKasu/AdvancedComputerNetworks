@@ -1,0 +1,124 @@
+All Reduce, There are several ranks, each rank provides an array of size N and is returned the an array which is sum of each of those arrays at the corresponding indices.
+
+ML Paper :
+    -> Perform operations like aggregation in the switch which reduces data transmitted during sync phases, reduces latency and speeds ip training time.
+    -> Here training process takes place in programmable switch dataplane
+    -> limited by on chip memory and processing capabilities.
+    -> Primary usage of conveying packets must be performed
+    -> Operations inside switches operate on intergers while ML operations are on FP values
+    -> It works becuase :  aggregation involves simple arthematic operation, making it use parallelization and pipelined execution on programmable devices.
+        -> Parameter updates are decomposed to appropriate chunks that can be individually processed by switch pipeline
+        -> Aggregation can be applied to different portions of data disregarding order without affecting correctness.
+        -> FPs are converted to fixed point by use of adaptive scaling factors with negligible approximation loss
+
+
+Ŵorkers stream their local vectors in chunks of size C. the switch aggregates those chunks and after N(no. of workers) aggregations it broadcasts the results to all workers.
+
+    Worker r does the following :
+        -> Send Vi[s : t] where t -s = C and wait for reponse
+        -> Write the response to Vresi[s:t]
+        -> Increase s and t by C and repeat
+
+    Switch behavior is following :
+        -> If not the last chunk for this aggregation round, aggreagate the values in the chunk and store the result on the switch and drop the packet
+        -> If last chunk :
+            -> aggregate values
+            -> Write aggregation result to packet
+            -> Prepare memory for reuse
+            -> Multicast the packet to involved workers
+
+
+Requirements and Assumptions :
+    -> Vector elements are 32 bit unsigned integers
+    -> Vectors at workers may have arbitury lengh but if involved in same ALLReduce invocation will always have the same lenght.
+    -> Your solution should worker with workers from size 1 to 8
+    -> Chunk size should alwys be greater than 1.
+    -> Perform at most 32 aggregations per packet traversal.
+    
+    Operations : Dont use multiplication, divide, modulo
+
+    Accessing Memory : Allows accesing a register (stateful memory) exactly once, perform limited logic and potentially write the register exactly once.
+
+    -> N and C are defined at compile time
+    -> Vector lengths are multiples of C and > 0
+    -> Aggregation overflow is impossible
+    -> Don't deal with normal IP traffic, just drop them
+    -> Feel free to use an P4 construct availbale to simple_switch_grpc
+
+
+    All Reduce over Ethernet :
+        -> Define aggregation protocol and packet format that carries aggregation data and control 
+        -> as well as how such packets are processed by both the switches and the workers workers.
+        -> Same protocol will be used by other 2 implementations
+        
+    Worker code should craft ethernet frames whose payload is your own ALLreduce protocol header.
+    Use Scapy APIs to craft, send and receive packets directly to/from eth0
+    Code should be able to understand protocol, perform aggregations and communicate results.
+    -> addMulticastGroup function allows to create multicast group for multicasting packets
+    -> Assume connection is reliable that all packets sent by switch and workers are received intact
+
+     All Reduce over UDP :
+        -> Connection happens over UDP sockets. Thus you can no longer Scapy for L2 communication. But can use scappy for crafting packets of custom protocol
+        -> Socket communication raises some importatn complications that you need to deal with.
+        -> Mac address for given IP should be known unlike level1 where you had access to ethernet you no longer have access to.
+        -> What to do if data is received by eth0 but not delivered to socket.
+        -> Python structs module would be useful for this task.
+        -> insertTableEntry function allows you to insert entries from the control plane to any table in your P4 program.
+
+    All Reduce over UDP with reliability:
+        -> Handle packet loss in :
+            -> switch will drop packet if packet is corrupted or congestion at egress or ingress port.
+            -> host's NIC will drop packet, if the packet is corrupted or if the NIC receive buffer is full.
+
+        -> SwitchML handles this with simple timeout. Worker starts a timer and waits for ACK, if no ack it resends.
+        -> The switch uses this too, just that it can not discard the result and needs to store it till it is no longer needed.
+        -> When the switch receives a retransmitted packet, it simply copies the result and unicasts it to the sender.
+        -> Need to aggregate only chuck of those sender that was corrupted.
+        Questions ?
+            -> How do you identify a corrupted packet ? 
+            -> How should the protocol be adapted for realiability and how much extra state is required
+            -> How to update switch state following single access memory semantics
+        
+
+In P4 you define the data plane and then you push the flows in the data plane.
+
+libraries : imported using include, include the core library and the architectur emode of the switch you want to use
+
+main() - defines the pipeline
+control() - used for modifying packets.
+
+
+At the parser you need to know the structure of the packet.
+
+
+Parser is a state machine : start is the first state and there can be diferent states.
+
+
+P4 control : tables (most importat)
+    -> table table_name{
+        key = {}
+        actions = {}
+        size = 1024 -> max entries in table
+    }
+
+actions can be functions that you define. key is the match in the table.
+
+At the end of the control block you can use apply() to apply the table.
+
+
+
+
+topo - defines the topology. Simple 1 switch and workers
+workers run ther worker.py script
+
+You have to specifiy the topology in the network.py, worker logic, and P4 logic
+
+
+In level 2 you need to care about transport layer communication
+
+
+Use functions in the comm and config in the lib folder.
+
+First declare packet header format using header keyword and ethernet_t type.
+
+
