@@ -203,7 +203,7 @@ control TheIngress(inout headers hdr,
  
         // Update the contribution mask to include this worker
         // update the worker's bit in the mask
-        current_contribution_mask = current_contribution_mask | ((bit<4>)(1) << hdr.sml.worker_rank); // Set worker's bit
+        current_contribution_mask = current_contribution_mask | ((bit<8>)(1) << hdr.sml.worker_rank); // Set worker's bit
  
         @atomic {
           aggregation_values.write(base_agg_index, current_val0);
