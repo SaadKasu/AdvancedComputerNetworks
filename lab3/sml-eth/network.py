@@ -1,4 +1,3 @@
-
 from lib import config # do not import anything before this
 from p4app import P4Mininet
 from mininet.topo import Topo

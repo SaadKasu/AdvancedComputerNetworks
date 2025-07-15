@@ -1,4 +1,3 @@
-
 import struct
  
 from lib.gen import GenInts, GenMultipleOfInRange
