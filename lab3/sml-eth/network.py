@@ -61,6 +61,7 @@ def RunWorkers(net):
         net.get(worker(i)).sendCmd('python worker.py %d > %s' % (i, log_file(i)))
     for i in range(NUM_WORKERS):
         net.get(worker(i)).waitOutput()
+    print("All workers have completed their execution.")  
 
 def RunControlPlane(net):
     """
@@ -71,7 +72,9 @@ def RunControlPlane(net):
     sw = net.get('s1')
     
     # Use function addMulticastGroup from p4app/src/p4_mininet.py to add a multicast group
-    sw.addMulticastGroup(mgid=1, ports=range(NUM_WORKERS))
+    mc_ports = [i for i in range(NUM_WORKERS)]
+    sw.addMulticastGroup(mgid=1, ports=mc_ports)
+    print("Multicast group 1 configured with ports:", mc_ports)
 
 topo = SMLTopo() # TODO: Create an SMLTopo instance
 net = P4Mininet(program="p4/main.p4", topo=topo)
