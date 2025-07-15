@@ -38,13 +38,13 @@ const int C_CHUNK_SIZE = 8;
  
 // Assuming max vec length  of 2048 with CHUNK_SIZE = 2
 // max chunks = 1024 i.e 2048 / Chunk_SIZE
-const int MAX_CHUNKS_IN_VECTOR = 128;
+const int MAX_CHUNKS_IN_VECTOR = 256;
  
 // Register to store the aggregated sum for each element in a chunk
 register<bit<32>>(MAX_CHUNKS_IN_VECTOR * C_CHUNK_SIZE) aggregation_values;
  
 // should be modified according to C_CHUNK_SIZE
-register<bit<4>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
+register<bit<8>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
  
 // Register to store the last AllReduce ID processed for each chunk.
 // To enable reuse of memory and updating aggregations
