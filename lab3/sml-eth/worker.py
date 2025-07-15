@@ -51,7 +51,7 @@ def AllReduce(iface, rank, data, result, epoch):
     Log("Total number of elements: %d, Number of chunks: %d" % (total_num_elements, num_chunks))
  
     # Assuming allredduce_id is unique fix values for each operation
-    current_allreduce_id = (epoch << 8) | rank
+    current_allreduce_id = epoch
     for chunk_idx_val in range(num_chunks):
         Log("Processing chunk %d/%d" % (chunk_idx_val + 1, num_chunks))
  
