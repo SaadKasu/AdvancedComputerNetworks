@@ -70,20 +70,6 @@ def RunControlPlane(net):
     # use functions already defined.
     sw = net.get('s1')
     
-    for i in range(NUM_WORKERS):
-        mac = getWorkerMAC(i)
-        port = i
-        sw.insertTableEntry(table_name='TheIngress.ethernet_table',
-                        match_fields={'hdr.eth.dstAddr': mac},
-                        action_name='TheIngress.l2_forward',
-                        action_params={'port': port})
-
-    # Multicast ARP requests
-    sw.insertTableEntry(table_name='TheIngress.ethernet_table',
-                        match_fields={'hdr.eth.dstAddr': 'ff:ff:ff:ff:ff:ff'},
-                        action_name='TheIngress.multicast',
-                        action_params={'mgid': 1})
-    
     # Use function addMulticastGroup from p4app/src/p4_mininet.py to add a multicast group
     sw.addMulticastGroup(mgid=1, ports=range(NUM_WORKERS))
 

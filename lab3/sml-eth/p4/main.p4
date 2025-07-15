@@ -104,41 +104,6 @@ control TheIngress(inout headers hdr,
     bit<4> current_contribution_mask;
     bit<16> current_allreduce_id; 
 
-    action drop() {
-        mark_to_drop(standard_metadata);
-    }
-
-      // Simple L2 forwarding action
-      action l2_forward(sw_port_t port) {
-        standard_metadata.egress_spec = port;
-      }
-
-      // Multicast action; for ARP requests
-      action multicast(bit<16> mgid) {
-        standard_metadata.mcast_grp = mgid;
-      }
-
-      // Ethernet forwarding table
-  table ethernet_table {
-
-    // Fields to match on and how to match
-    key = {
-      hdr.eth.dstAddr: exact;
-    }
-
-    // Possible actions
-    actions = {
-      l2_forward;
-      multicast;
-      drop;
-      NoAction;
-    }
-
-    // Table size and default action
-    size = 1024;
-    default_action = NoAction();
-  }
-
  apply{
         if(hdr.sml.isValid()){
 
