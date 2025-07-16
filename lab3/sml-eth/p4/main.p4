@@ -121,7 +121,7 @@ control TheIngress(inout headers hdr,
   bit<32> current_val2 = 0;
   bit<32> current_val3 = 0; // values will be added with incrasing C_CHUNK_SIZE
   
-  bit<4> current_contribution_mask; // Use 2 because N_WORKERS = 2
+  bit<8> current_contribution_mask; // Use 2 because N_WORKERS = 2
   bit<16> current_allreduce_id;
   
   
@@ -149,7 +149,7 @@ control TheIngress(inout headers hdr,
  
       // if current_allreduce_id is different, or if workers has not contributed
       if (current_allreduce_id != hdr.sml.allreduce_id ||
-          (current_contribution_mask & ((bit<4>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
+          (current_contribution_mask & ((bit<8>)(1) << hdr.sml.worker_rank)) == 0) { // check if worker bit isset
         
         // For a new AllReduce ID for this chunk reset the mask and agg values
         if(current_allreduce_id != hdr.sml.allreduce_id) {
@@ -183,7 +183,7 @@ control TheIngress(inout headers hdr,
  
         // Update the contribution mask to include this worker
         // update the worker's bit in the mask
-        current_contribution_mask = current_contribution_mask | ((bit<4>)(1) << hdr.sml.worker_rank); // Set worker's bit
+        current_contribution_mask = current_contribution_mask | ((bit<8>)(1) << hdr.sml.worker_rank); // Set worker's bit
  
         @atomic {
           aggregation_values.write(base_agg_index, current_val0);
