@@ -31,7 +31,7 @@ const bit<16> SWITCHML_ETHERTYPE = 0x88F0;
  
  
 // Number of workers (N)
-const int N_WORKERS = 4;
+const int N_WORKERS = 8;
  
 // Max chunk size (C) 
 const int C_CHUNK_SIZE = 4;
