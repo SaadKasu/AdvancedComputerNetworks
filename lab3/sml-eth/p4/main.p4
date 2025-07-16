@@ -44,7 +44,7 @@ const int MAX_CHUNKS_IN_VECTOR = 256;
 register<bit<32>>(MAX_CHUNKS_IN_VECTOR * C_CHUNK_SIZE) aggregation_values;
  
 // should be modified according to C_CHUNK_SIZE
-register<bit<4>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
+register<bit<8>>(MAX_CHUNKS_IN_VECTOR) chunk_contributions;
  
 // Register to store the last AllReduce ID processed for each chunk.
 // To enable reuse of memory and updating aggregations
